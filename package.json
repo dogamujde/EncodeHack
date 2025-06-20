@@ -1,13 +1,16 @@
 {
-  "name": "live-coach",
+  "name": "live-coach-full-stack",
   "version": "1.0.0",
-  "description": "TypeScript project with access token functionality and AI monitoring",
-  "main": "dist/index.js",
+  "description": "AI-powered interview analysis platform with web interface",
+  "main": "web-app/src/app/page.tsx",
   "scripts": {
-    "build": "tsc",
-    "dev": "ts-node src/index.ts",
-    "start": "node dist/index.js",
+    "build": "cd web-app && npm install && npm run build",
+    "dev": "cd web-app && npm run dev",
+    "start": "cd web-app && npm start",
     "watch": "tsc -w",
+    "legacy:build": "tsc",
+    "legacy:dev": "ts-node src/index.ts",
+    "legacy:start": "node dist/index.js",
     "monitor:start": "cd vibeHack && python auto_agent_monitor.py --watch",
     "monitor:test": "cd vibeHack && python test_monitoring.py",
     "monitor:stats": "cd vibeHack && python -c 'from agent_learning_system import get_stats; print(get_stats())'",
@@ -16,7 +19,11 @@
   },
   "keywords": [
     "typescript",
-    "access-token",
+    "interview-analysis",
+    "nextjs",
+    "ai",
+    "transcription",
+    "sentiment-analysis",
     "ai-monitoring",
     "cursor",
     "agent-learning"
@@ -40,7 +47,10 @@
     "mic": "^2.1.2",
     "node-fetch": "^3.3.2",
     "qs": "^6.14.0",
-    "ws": "^8.18.2"
+    "ws": "^8.18.2",
+    "next": "^15.3.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "types": "./dist/index.d.ts"
 }
