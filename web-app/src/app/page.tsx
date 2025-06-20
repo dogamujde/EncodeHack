@@ -1,14 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AudioUploader } from '@/components/audio-uploader';
 import { AnalysisDashboard } from '@/components/analysis-dashboard';
 import { ProcessingStatus } from '@/components/processing-status';
+
+const STORAGE_KEY = 'livecoach_analysis_data';
 
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'results'>('upload');
   const [interviewId, setInterviewId] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<any>(null);
+
+  // Load saved analysis data on page load
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        setAnalysisData(parsedData);
+        setCurrentStep('results');
+      }
+    } catch (error) {
+      console.error('Error loading saved analysis data:', error);
+      // Clear corrupted data
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
 
   const handleUploadSuccess = (id: string) => {
     setInterviewId(id);
@@ -18,12 +36,26 @@ export default function HomePage() {
   const handleProcessingComplete = (data: any) => {
     setAnalysisData(data);
     setCurrentStep('results');
+    
+    // Save analysis data to localStorage for persistence
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Error saving analysis data:', error);
+    }
   };
 
   const handleStartOver = () => {
     setCurrentStep('upload');
     setInterviewId(null);
     setAnalysisData(null);
+    
+    // Clear saved analysis data
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.error('Error clearing analysis data:', error);
+    }
   };
 
   return (
@@ -55,9 +87,14 @@ export default function HomePage() {
           {currentStep === 'results' && analysisData && (
             <div className="space-y-8">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  Analysis Results
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    Analysis Results
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    💾 Results are automatically saved and persist across page refreshes
+                  </p>
+                </div>
                 <button
                   onClick={handleStartOver}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
