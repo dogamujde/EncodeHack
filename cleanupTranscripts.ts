@@ -294,9 +294,108 @@ if (require.main === module) {
   cleanupTranscripts();
 }
 
+// NEW FUNCTION: Clean files for a specific audio file
+function cleanFilesForAudio(audioFilePath: string): void {
+  console.log(`🧹 Cleaning files for audio: ${audioFilePath}`);
+  
+  try {
+    const audioBaseName = path.basename(audioFilePath, path.extname(audioFilePath));
+    const cleanAudioBaseName = audioBaseName
+      .replace(/[^a-zA-Z0-9\-_\s]/g, '')
+      .replace(/\s+/g, '_')
+      .toLowerCase();
+    
+    console.log(`🎯 Targeting files for: "${cleanAudioBaseName}"`);
+    
+    // Get all files in current directory
+    const allFiles = fs.readdirSync('.');
+    
+    // Define patterns for transcript and analysis files
+    const transcriptPatterns = [
+      /transcript\.json$/,
+      /enhanced_transcript\.json$/,
+      /two_speaker_transcript\.json$/,
+      /_transcript\.json$/,
+      /_analysis\.json$/,
+      /speaker_analysis\.json$/,
+      /two_speaker_analysis\.json$/
+    ];
+    
+    const jsonFiles = allFiles.filter(file => 
+      transcriptPatterns.some(pattern => pattern.test(file))
+    );
+    
+    console.log(`📄 Found ${jsonFiles.length} existing transcript/analysis files`);
+    
+    const filesToDelete: string[] = [];
+    
+    for (const jsonFile of jsonFiles) {
+      let shouldDelete = false;
+      
+      // RULE 1: Delete generic files (they'll be replaced with new specific ones)
+      if (['transcript.json', 'enhanced_transcript.json', 'two_speaker_transcript.json', 
+           'speaker_analysis.json', 'two_speaker_analysis.json'].includes(jsonFile)) {
+        shouldDelete = true;
+        console.log(`   🗑️ Generic file (will be replaced): ${jsonFile}`);
+      }
+      // RULE 2: Delete files that match this specific audio
+      else {
+        // Extract the base name from the JSON file
+        let jsonBaseName = jsonFile
+          .replace('_two_speaker_transcript.json', '')
+          .replace('_enhanced_transcript.json', '')
+          .replace('_transcript.json', '')
+          .replace('_two_speaker_analysis.json', '')
+          .replace('_enhanced_analysis.json', '')
+          .replace('_analysis.json', '')
+          .replace('_enhanced.json', '')
+          .replace('.json', '');
+        
+        const cleanJsonBaseName = jsonBaseName
+          .replace(/[^a-zA-Z0-9\-_\s]/g, '')
+          .replace(/\s+/g, '_')
+          .toLowerCase();
+        
+        if (cleanJsonBaseName === cleanAudioBaseName) {
+          shouldDelete = true;
+          console.log(`   🗑️ Matches current audio: ${jsonFile}`);
+        }
+      }
+      
+      if (shouldDelete) {
+        filesToDelete.push(jsonFile);
+      }
+    }
+    
+    // Delete the files
+    if (filesToDelete.length > 0) {
+      console.log(`\n🗑️ Deleting ${filesToDelete.length} files for clean processing...`);
+      
+      let deletedCount = 0;
+      for (const file of filesToDelete) {
+        try {
+          fs.unlinkSync(file);
+          console.log(`   ✅ Deleted: ${file}`);
+          deletedCount++;
+        } catch (error) {
+          console.error(`   ❌ Failed to delete ${file}:`, error);
+        }
+      }
+      
+      console.log(`✅ Clean slate ready! Deleted ${deletedCount} old files.`);
+    } else {
+      console.log("✨ No existing files to clean for this audio.");
+    }
+    
+  } catch (error) {
+    console.error("❌ Error during audio-specific cleanup:", error);
+  }
+}
+
 export { 
   cleanupTranscripts, 
   autoCleanup, 
+  cleanFilesForAudio,
   standardizeTranscriptName, 
   getAnalysisFileName 
 }; 

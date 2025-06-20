@@ -1,17 +1,25 @@
 {
   "name": "live-coach",
   "version": "1.0.0",
-  "description": "TypeScript project with access token functionality",
+  "description": "TypeScript project with access token functionality and AI monitoring",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "monitor:start": "cd vibeHack && python auto_agent_monitor.py --watch",
+    "monitor:test": "cd vibeHack && python test_monitoring.py",
+    "monitor:stats": "cd vibeHack && python -c 'from agent_learning_system import get_stats; print(get_stats())'",
+    "setup:vibe-monitor": "cd vibeHack && pip install -r requirements.txt",
+    "test:integration": "ts-node test-integration.ts"
   },
   "keywords": [
     "typescript",
-    "access-token"
+    "access-token",
+    "ai-monitoring",
+    "cursor",
+    "agent-learning"
   ],
   "author": "",
   "license": "MIT",

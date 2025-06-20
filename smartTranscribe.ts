@@ -2,19 +2,14 @@ import axios from "axios";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { autoCleanup, standardizeTranscriptName, getAnalysisFileName } from "./cleanupTranscripts";
+import { autoCleanup, cleanFilesForAudio, standardizeTranscriptName, getAnalysisFileName } from "./cleanupTranscripts";
 
 dotenv.config();
 
 const apiKey = process.env.ASSEMBLYAI_API_KEY!;
 
 async function smartTranscribe(inputFilePath?: string, speakers: number = 2) {
-  // Auto-cleanup first
-  console.log("🤖 Running pre-transcription cleanup...");
-  autoCleanup();
-  console.log("");
-
-  // Determine file path dynamically
+  // Determine file path dynamically first
   let filePath: string;
   
   if (inputFilePath) {
@@ -44,6 +39,11 @@ async function smartTranscribe(inputFilePath?: string, speakers: number = 2) {
     console.error(`❌ File not found: ${filePath}`);
     return;
   }
+
+  // Clean files for this specific audio (removes old transcripts/analysis)
+  console.log("🧹 Cleaning old files for this audio...");
+  cleanFilesForAudio(filePath);
+  console.log("");
 
   // Generate standardized file names
   const transcriptFileName = standardizeTranscriptName(filePath, 'two_speaker');
