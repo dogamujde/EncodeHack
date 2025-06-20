@@ -54,20 +54,32 @@ export function AnalysisDashboard({ data }: AnalysisDashboardProps) {
   return (
     <div className="space-y-8">
       {/* AI Visual */}
-      {ai_visual_url && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            🎨 AI-Generated Summary
-          </h3>
-          <div className="flex justify-center">
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          🎨 AI-Generated Summary
+        </h3>
+        <div className="flex justify-center">
+          {ai_visual_url ? (
             <img 
               src={ai_visual_url} 
               alt="AI-generated interview analysis visual"
               className="max-w-full h-auto rounded-lg shadow-md"
             />
-          </div>
+          ) : (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 text-center max-w-md">
+              <div className="text-6xl mb-4">🎨</div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">AI Visual Summary</h4>
+              <p className="text-gray-600 text-sm">
+                A visual representation of the interview analysis showcasing key themes, 
+                sentiment patterns, and speaking dynamics.
+              </p>
+              <div className="mt-4 text-xs text-gray-500">
+                Visual generation in progress...
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

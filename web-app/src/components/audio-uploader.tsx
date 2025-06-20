@@ -188,14 +188,19 @@ export function AudioUploader({ onSuccess }: AudioUploaderProps) {
 
         {/* Info */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-medium text-blue-900 mb-2">What we analyze:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Speaker identification and balance</li>
-            <li>• Sentiment analysis throughout the conversation</li>
-            <li>• Key phrases and topics discussed</li>
-            <li>• Speaking patterns and confidence metrics</li>
-            <li>• AI-generated visual summary</li>
-          </ul>
+                      <h3 className="font-medium text-blue-900 mb-2">What we analyze:</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Speaker identification and balance</li>
+              <li>• Sentiment analysis throughout the conversation</li>
+              <li>• Key phrases and topics discussed</li>
+              <li>• Speaking patterns and confidence metrics</li>
+              <li>• AI-generated visual summary</li>
+            </ul>
+            {!process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY && (
+              <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                <span className="font-medium">Demo Mode:</span> Upload any audio file to see a sample analysis
+              </div>
+            )}
         </div>
       </div>
     </div>
