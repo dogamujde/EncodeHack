@@ -66,15 +66,27 @@ export function AnalysisDashboard({ data }: AnalysisDashboardProps) {
               className="max-w-full h-auto rounded-lg shadow-md"
             />
           ) : (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 text-center max-w-md">
-              <div className="text-6xl mb-4">🎨</div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">AI Visual Summary</h4>
-              <p className="text-gray-600 text-sm">
-                A visual representation of the interview analysis showcasing key themes, 
-                sentiment patterns, and speaking dynamics.
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-12 text-center w-full max-w-2xl mx-auto border-2 border-dashed border-blue-200">
+              <div className="mb-6">
+                <div className="w-20 h-20 mx-auto bg-blue-500 rounded-full flex items-center justify-center text-white text-3xl mb-4">
+                  🎨
+                </div>
+                <div className="flex justify-center space-x-2 mb-4">
+                  <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-indigo-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
+                </div>
+              </div>
+              <h4 className="text-xl font-bold text-gray-800 mb-3">AI Visual Summary</h4>
+              <p className="text-gray-700 text-base leading-relaxed mb-4">
+                A comprehensive visual representation of your interview analysis including 
+                key themes, sentiment patterns, speaking dynamics, and performance insights.
               </p>
-              <div className="mt-4 text-xs text-gray-500">
-                Visual generation in progress...
+              <div className="bg-white bg-opacity-50 rounded-lg p-3 text-sm text-gray-600">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                  Generating personalized insights...
+                </div>
               </div>
             </div>
           )}
@@ -157,18 +169,18 @@ export function AnalysisDashboard({ data }: AnalysisDashboardProps) {
                   
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">Words</p>
-                      <p className="font-semibold">{speakerData.wordCount}</p>
+                      <p className="text-gray-700 font-medium">Words</p>
+                      <p className="font-bold text-gray-900 text-lg">{speakerData.wordCount}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Duration</p>
-                      <p className="font-semibold">
+                      <p className="text-gray-700 font-medium">Duration</p>
+                      <p className="font-bold text-gray-900 text-lg">
                         {formatDuration(Math.round(speakerData.totalDuration / 1000))}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Speaking Rate</p>
-                      <p className="font-semibold">{Math.round(wpm)} WPM</p>
+                      <p className="text-gray-700 font-medium">Speaking Rate</p>
+                      <p className="font-bold text-gray-900 text-lg">{Math.round(wpm)} WPM</p>
                     </div>
                   </div>
                   
@@ -247,8 +259,8 @@ export function AnalysisDashboard({ data }: AnalysisDashboardProps) {
                   <span className="text-xl">{sentiment.emoji}</span>
                   <div className="flex-1">
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium">{sentiment.label}</span>
-                      <span>{sentiment.count} segments ({formatPercentage(percentage)})</span>
+                      <span className="font-semibold text-gray-900">{sentiment.label}</span>
+                      <span className="font-bold text-gray-800">{sentiment.count} segments ({formatPercentage(percentage)})</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
