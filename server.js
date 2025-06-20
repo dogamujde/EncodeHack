@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = 8000;
 
 // Enable CORS for all routes
 app.use(cors());
@@ -66,7 +66,7 @@ app.listen(PORT, () => {
     console.log(`📡 Server running at: http://localhost:${PORT}`);
     console.log('🎤 Real-time transcription ready!');
     console.log('\n💡 Usage:');
-    console.log('1. Open: http://localhost:3000');
+    console.log('1. Open: http://localhost:8000');
     console.log('2. Enter your API key: 48d9e34327bb4f9f89442606b3439aa0');
     console.log('3. Click "Connect to AssemblyAI"');
     console.log('4. Start recording and speaking!');

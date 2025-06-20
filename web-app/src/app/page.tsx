@@ -81,11 +81,18 @@ export default function HomePage() {
                 </div>
               </div>
               
-              <Link href="/meeting/sample-meeting">
-                <Button size="lg" className="w-full">
-                  View Sample Meeting Analysis
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/meeting/sample-meeting" className="flex-1">
+                  <Button size="lg" className="w-full">
+                    View Sample Meeting Analysis
+                  </Button>
+                </Link>
+                <Link href="/meeting" className="flex-1">
+                  <Button size="lg" variant="outline" className="w-full">
+                    Start Live Meeting
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

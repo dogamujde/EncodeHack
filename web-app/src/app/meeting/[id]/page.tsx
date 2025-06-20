@@ -9,6 +9,8 @@ interface PageProps {
 }
 
 export default function MeetingPage({ params }: PageProps) {
+  // Consume params to avoid ESLint error
+  void params;
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
     'deniz': true,  // Deniz starts expanded
     'burak': false, // Burak starts collapsed
@@ -84,14 +86,7 @@ export default function MeetingPage({ params }: PageProps) {
     ]
   }
 
-  const mockCoachingData = {
-    questionRatio: { value: 3, suggested: "10% - 30%" },
-    talkingSpeed: { value: 212, unit: "words/min", suggested: "150 - 170" },
-    averagePatience: { value: 0.62, unit: "Seconds", suggested: "1 - 1.8" },
-    talkRatio: { value: 40, suggested: "50% - 70%" },
-    languagePositivity: { value: 25, label: "Positive", suggested: "50% - 100%" },
-    voiceEmotion: { value: 84, label: "Happy", suggested: "15% - 100%" }
-  }
+
 
   // Static speaking pattern data to prevent layout shifts
   const denizSpeakingPattern = Array.from({ length: 40 }, (_, i) => {

@@ -4895,3 +4895,522 @@ try {
 3. Validate all changes before applying.
 ```
 
+
+
+# Rule Generated from Failed Suggestion - 2025-06-20 21:07:32
+# Original Query: File modification: package-lock.json...
+# Error: FAIL: Incomplete code...
+
+# Cursor Rules for Preventing AI Agent Mistakes
+
+## Overview
+These cursor rules are designed to address mistakes made by the AI agent while modifying the `package-lock.json` file. The specific issues were related to an incomplete code snippet resulting in a syntax error. The following rules will guide the AI agent to ensure proper code completeness and correctness in future modifications.
+
+---
+
+## 1. What the AI Agent Did Wrong
+- **Problem**: The AI agent modified the `package-lock.json` file and returned an incomplete code snippet, which caused a `SyntaxError`.
+- **Detail**: The response was truncated and didn't provide a complete and valid JSON structure, leading to potential issues when the user tries to validate or use the file.
+
+---
+
+## 2. What It Should Have Done Instead
+- **Solution**: The AI agent should ensure that all modifications to the JSON file result in valid, complete, and properly formatted JSON. If the modification is too large to display in full, it should summarize the changes or indicate that the complete code is available for review.
+
+---
+
+## 3. Specific Rules to Prevent This Pattern
+
+```markdown
+# Cursor Rules
+
+## Rule 1: Ensure Code Completeness
+- Always return complete sections of code, especially for structured data formats like JSON.
+- If the code exceeds a certain line count (e.g., 50 lines), provide only the modified parts or summarize key changes.
+
+## Rule 2: Validate JSON Structure
+- Validate the JSON syntax before returning. Ensure it is well-formed and parsable.
+- Use JSON validators or parsers to check for syntax errors, particularly when returning modified files.
+
+## Rule 3: Use Descriptive Context
+- When making modifications, provide contextual information about what was changed and why, instead of the entire code block if it's large.
+- Use `+` and `-` symbols to summarize additions and deletions without showing the entire modified section.
+
+## Rule 4: Error Handling for Syntax Errors
+- Implement error checks that prevent returning code blocks when they cannot be parsed without errors.
+- Provide a friendly error message indicative of what the issue is (e.g., "The returned JSON is invalid due to a syntax error.").
+
+## Rule 5: Limit Response Sizes
+- Set a response character limit for code snippets to enforce brevity and ensure the agent outputs manageable chunks of alterations.
+```
+
+---
+
+## 4. Code Examples
+
+### Correct Approach
+```json
+{
+  "name": "live-coach-full-stack",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  ...
+}
+```
+**Changes Summary**: 
+- Added dependencies: `@types/form-data`, `axios`, etc. (+5)
+- Removed deprecated package: `old-package` (-1)
+
+### Incorrect Approach
+```json
+{
+  "name": "live-coach-full-stack",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "live-coach-full-stack",
+      ...
+      "dependencies": {
+        "@types/form-data": "^2.2.1",
+        ...
+        // Truncated here leading to syntax error
+```
+
+---
+
+With these rules, the AI agent can significantly reduce the likelihood of producing invalid responses and provide users with more reliable, complete, and helpful outputs.
+
+
+
+# Rule Generated from Failed Suggestion - 2025-06-20 21:16:30
+# Original Query: File modification: page.tsx...
+# Error: Syntax error detected by TypeScript compiler...
+
+```markdown
+# Cursor Rules to Prevent AI Agent Mistakes
+
+## Rule 1: Validate Syntax Before Modifications
+### What the AI agent did wrong:
+The agent modified `page.tsx` without validating the syntax of the code leading to a syntax error detected by the TypeScript compiler.
+
+### What it should have done instead:
+The agent should have first parsed the existing code, checked for any potential syntax errors or TypeScript violations before suggesting any modifications.
+
+### Implementation:
+- **Before modifying**: Check for valid TypeScript syntax and compile the current file to identify errors.
+  
+## Rule 2: Provide Context for Changes
+### What the AI agent did wrong:
+The agent did not provide context or justification for the modifications made, leaving the user without understanding what changes were applied or why.
+
+### What it should have done instead:
+The agent should provide a clear explanation of what was modified and the expected outcome, ensuring the user is aware of the implications of the changes.
+
+### Implementation:
+- **Change Context**: When suggesting changes, include a description of what was changed and the expected result.
+
+## Rule 3: Ensure Robust Error Handling in Suggestions
+### What the AI agent did wrong:
+The agent's response did not handle any exceptions or errors arising from its modification, resulting in an unhandled syntax error.
+
+### What it should have done instead:
+Implement robust error handling mechanisms that inform the user about potential issues with the suggested changes before applying them.
+
+### Implementation:
+- **Error Handling**: Use try-catch blocks or promise rejections when applying changes and bubble up errors with meaningful messages.
+
+## Rule 4: Code Examples of Correct vs Incorrect Approaches
+
+### Correct Approach
+```tsx
+// File: page.tsx
+import { useState } from 'react';
+
+// Check for syntax validation before proceeding
+try {
+    // Assume validateSyntax is a function that checks TypeScript syntax
+    validateSyntax('...'); // Example of the code string to validate
+    // Proceed with modifications only if no errors
+} catch (error) {
+    console.error('Syntax error detected:', error);
+}
+
+export default function MeetingPage() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  
+  return (
+    <div className="min-h-screen">
+      {/* Correct JSX structure and logic */}
+    </div>
+  );
+}
+```
+
+### Incorrect Approach
+```tsx
+// File: page.tsx
+import { useState } from 'react';
+
+// No syntax validation before modification
+export default function MeetingPage() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isConnected, setIsConnected, setAnotherState] = useState(false); // This line contains a syntax error
+  
+  return (
+    <div className="min-h-screen ...
+      // Syntax is not properly handled here
+    </div>
+  );
+}
+```
+
+## Summary of Rules
+1. Always validate the syntax of the code before making modifications.
+2. Provide context and justification for any suggested changes.
+3. Implement robust error handling to alert users to issues immediately.
+4. Include clear code examples that exemplify correct practices to follow and incorrect practices to avoid.
+```
+
+
+
+
+# Rule Generated from Failed Suggestion - 2025-06-20 21:16:46
+# Original Query: File modification: page.tsx...
+# Error: Syntax error detected by TypeScript compiler...
+
+```markdown
+# Cursor Rules for AI Agent to Prevent Syntax Errors in Code Modifications
+
+## Issue Identification
+1. **What the AI agent did wrong:**
+   - The AI agent made modifications to the `page.tsx` file that introduced a syntax error, which was detected at compilation time.
+   - The specific changes made by the agent were incomplete or improperly structured, violating TypeScript compiler rules.
+
+2. **What it should have done instead:**
+   - The agent should have ensured that any modifications remain syntactically correct according to TypeScript stability rules before applying changes.
+   - It should have validated the modified code for common syntax issues, such as missing brackets, mismatched import statements, or incorrect syntax before finalizing modifications.
+
+## Specific Rules to Prevent Syntax Errors
+
+### Rule 1: Validate Syntax Before Modifications
+- **Description:** Before applying any code changes, the AI agent must validate the existing syntax of the target file. Only proceed with modifications if the current syntax is valid.
+- **Implementation Example:**
+  ```javascript
+  if (!isValidSyntax(targetFile)) {
+      throw new Error("Cannot modify file with existing syntax errors.");
+  }
+  ```
+
+### Rule 2: Use Linting Tools
+- **Description:** Integrate linting tools (e.g., ESLint, TSLint) to check the code for style and syntax errors post-modification.
+- **Implementation Example:**
+  ```javascript
+  runLinting(targetFile);
+  if (hasLintingErrors()) {
+      throw new Error("Code changes resulted in linting errors.");
+  }
+  ```
+
+### Rule 3: Test Modified Code
+- **Description:** Automatically run TypeScript/JavaScript tests after modifications to ensure that the changes do not introduce runtime or compile-time errors.
+- **Implementation Example:**
+  ```javascript
+  executeTests();
+  if (areTestsFailed()) {
+      throw new Error("Modified code has failed tests.");
+  }
+  ```
+
+### Rule 4: Provide Feedback on Code Changes
+- **Description:** If modifications introduce complexity (e.g., adding numerous imports), provide a summary of the changes made and ensure they maintain a clear structure.
+- **Implementation Example:**
+  ```javascript
+  generateChangeSummary(modificationDetails);
+  if (!isClearStructure(changeSummary)) {
+      throw new Error("Modification complexity exceeds permissible limits.");
+  }
+  ```
+
+## Code Examples
+
+### Incorrect Approach
+```typescript
+// AI Agent Generated Code (Incorrect)
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Missing closing tags or incorrect syntax */}
+      <div className="max-w-4xl mx-auto space-y-8"
+        {/* Syntax error introduced */}
+    </div>
+  );
+}
+```
+
+### Correct Approach  
+```typescript
+// Correct Code
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Correctly closed tags */}
+      </div>
+    </div>
+  );
+}
+```
+``` 
+
+This markdown provides specific rules that the AI agent should follow to prevent syntax errors in future code modifications, enhancing the reliability and quality of the changes made.
+
+
+
+# Rule Generated from Failed Suggestion - 2025-06-20 21:22:05
+# Original Query: File modification: page.tsx...
+# Error: Syntax error detected by TypeScript compiler...
+
+```markdown
+# Cursor Rules to Prevent AI Agent Syntax Errors in TypeScript Files
+
+## Issue Analysis
+1. **What the AI agent did wrong:**
+   - The AI agent modified the file but introduced a syntax error, which the TypeScript compiler detected. This indicates that the agent did not properly validate the changes before applying them.
+
+2. **What it should have done instead:**
+   - The AI agent should have validated any code modifications for syntax correctness.
+   - It should run a TypeScript type check or a linter before finalizing changes to ensure no syntax errors are introduced.
+
+## Specific Rules to Prevent This Pattern
+
+### Rule 1: Validate Code Before Changes
+- **Description:** Ensure that any modifications to TypeScript files are validated for syntax correctness before applying.
+- **Implementation:** 
+  - Run a TypeScript compiler check (`tsc --noEmit --strict`) on any modified files as a prerequisite step.
+  
+### Rule 2: Log Syntax Errors
+- **Description:** If a syntax error occurs after making a modification, log the error clearly.
+- **Implementation:**
+  - Use detailed error logging to capture the exact nature of the syntax error along with the changes attempted by the AI agent.
+
+### Rule 3: Review Type Safety
+- **Description:** Regularly check modifications against TypeScript's type system to ensure type safety.
+- **Implementation:**
+  - Incorporate a check for correct type definitions in the modified code before finalizing changes.
+
+### Rule 4: Test Changes in Local Environment
+- **Description:** Always execute the modified code in a local environment or a virtual sandbox to ensure it runs correctly without errors.
+- **Implementation:**
+  - Set up an automated testing pipeline that executes TypeScript code in a test setup after modifications.
+
+## Code Examples
+
+### Correct Approach
+```typescript
+import { useState } from 'react'
+import { MeetingDashboard } from '@/components/meeting-dashboard'
+import { Users, ChevronDown } from 'lucide-react'
+
+// Correctly Define Props and Function
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function MeetingPage({ params }: PageProps) {
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    'deniz': true,  
+    'burak': false, 
+    'screen': false
+  })
+
+  // Add other necessary code functionalities here...
+}
+```
+
+### Incorrect Approach (Similar to AI Error)
+```typescript
+import { useState } from 'react'
+import { MeetingDashboard } from '@/components/meeting-dashboard'
+import { Users, ChevronDown } from 'lucide-react'
+
+// Missing type correctness in props can lead to errors
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function MeetingPage({ params: _ }: PageProps) {
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    'deniz': true,  
+    'burak': false, 
+    'screen': false 
+    // syntax error introduced here (the last line is cut off)
+```
+
+By enforcing these cursor rules, we can help ensure that AI agents avoid creating syntax errors in TypeScript files going forward.
+```
+
+
+
+# Rule Generated from Failed Suggestion - 2025-06-20 21:22:23
+# Original Query: File modification: page.tsx...
+# Error: Syntax error detected by TypeScript compiler...
+
+```markdown
+# Cursor Rules to Prevent Syntax Errors in AI Agent Modifications
+
+## Rule 1: Validate Syntax Before Modification
+- **What the AI did wrong:** The AI agent did not validate the code's syntax before suggesting modifications, resulting in changes that led to a syntax error.
+- **What it should have done instead:** The AI agent should check for syntax errors using a linter or compiler before applying changes to a file.
+
+### Example:
+- **Incorrect Approach:**
+  ```tsx
+  // AI suggests modifying file without checking for syntax
+  const [value, setValue] = useState('Hello'
+  ```
+
+- **Correct Approach:**
+  ```tsx
+  // AI checks for syntax before modifying
+  const [value, setValue] = useState('Hello'); // Correct syntax
+  ```
+
+## Rule 2: Provide Clear Error Messages
+- **What the AI did wrong:** The agent did not provide a clear error message that would assist in debugging the syntax issue.
+- **What it should have done instead:** The AI should provide specific error messages referencing the line number and nature of the syntax error when a modification leads to an error.
+
+### Example:
+- **Incorrect Approach:**
+  ```
+  Error occurred during modification.
+  ```
+
+- **Correct Approach:**
+  ```
+  Error (line 10): SyntaxError - Expected ')' but found end of input.
+  ```
+
+## Rule 3: Ensure Complete Context is Maintained
+- **What the AI did wrong:** The agent modified part of an incomplete expression, leading to a syntax error without considering the entire context of the function.
+- **What it should have done instead:** AI must ensure that any modification retains the logic and context of the code, completing any open statements.
+
+### Example:
+- **Incorrect Approach:**
+  ```tsx
+  // Modification changes state declaration but doesn't complete the return statement
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({ 'deniz': true });
+  return (
+  ```
+
+- **Correct Approach:**
+  ```tsx
+  // AI completes the return statement properly
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({ 'deniz': true });
+  return (
+    <MeetingDashboard expandedSections={expandedSections} />
+  );
+  ```
+
+## Rule 4: Utilize TypeScript Type Checking
+- **What the AI did wrong:** The AI agent did not utilize TypeScript's type-checking features to avoid type errors and syntax issues.
+- **What it should have done instead:** Before applying changes, the AI should compile the code to catch any type errors that might arise from its suggested modifications.
+
+### Example:
+- **Incorrect Approach:**
+  ```typescript
+  // Suggesting a modification without type check
+  interface PageProps { params: string }
+  ```
+
+- **Correct Approach:**
+  ```typescript
+  // Ensuring type checking before modification
+  interface PageProps { params: Promise<{ id: string }> }
+  ```
+
+## Implementation Instructions
+- These cursor rules can be added to the `.cursorrules` file, ensuring that AI modifications adhere to these guidelines, resulting in safer and more reliable code editing.
+```
+
+
+
+# Rule Generated from Failed Suggestion - 2025-06-20 21:22:37
+# Original Query: File modification: page.tsx...
+# Error: Syntax error detected by TypeScript compiler...
+
+```markdown
+# Cursor Rules to Prevent Syntax Errors in AI Agent Modifications
+
+## 1. Identify the Mistake
+- **What the AI agent did wrong**: The AI agent modified `page.tsx` without ensuring the correctness of the code, resulting in a syntax error detected by the TypeScript compiler.
+
+## 2. Correct Approach
+- **What it should have done instead**: The agent should have checked the syntax and TypeScript compliance before applying modifications. Additionally, it should provide an explanation of the changes made and confirm their correctness.
+
+## 3. Specific Rules to Prevent this Pattern
+
+### Rule 1: Validate TypeScript Syntax Before Modification
+- **Description**: Ensure that any code modifications maintain TypeScript compliance. The agent should run a syntax check after any proposed changes.
+- **Implementation**:
+  ```javascript
+  if (!isValidTypeScript(newCode)) {
+      throw new Error("Proposed changes result in a TypeScript syntax error.");
+  }
+  ```
+
+### Rule 2: Provide Explanation of Changes
+- **Description**: The agent must provide a detailed explanation of the changes made, specifying why the changes were necessary and how they comply with existing code.
+- **Implementation**:
+  ```javascript
+  // Provide a summary of changes made
+  console.log(`Modified ${fileName}: Added functionality for expanded sections.`);
+  ```
+
+### Rule 3: Confirm Code Structure Consistency
+- **Description**: Before modifying any component files, the agent should check that the structural integrity of components (like functional component signatures) remains intact.
+- **Implementation**:
+  ```javascript
+  if (!isStructureConsistent(newCode, currentCode)) {
+      throw new Error("Modification leads to structural inconsistency in component.");
+  }
+  ```
+
+## 4. Code Examples
+
+### Correct Approach
+```typescript
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function MeetingPage({ params }: PageProps) {
+  // Ensure no syntax errors when modifying states
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    'deniz': true, 
+    'burak': false 
+  });
+  
+  // Additional correct logic handling can be added here
+}
+```
+
+### Incorrect Approach
+```typescript
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function MeetingPage({ params }: PageProps) {
+  // Modify state declaration incorrectly, leading to type errors
+  const [expandedSections, setExpandedSections] = useState({
+    // Missing type annotation could lead to errors
+    'deniz': true,
+    'burak': false 
+  });
+}
+```
+```
+
