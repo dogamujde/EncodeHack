@@ -19,8 +19,11 @@ async function uploadAudio() {
 async function requestTranscription(audioUrl: string) {
   const response = await axios.post("https://api.assemblyai.com/v2/transcript", {
     audio_url: audioUrl,
-    speaker_labels: true,   // This is critical for speaker identification
-    language_code: "tr", // Turkish
+    speaker_labels: true,   // Enable speaker identification
+    speakers_expected: 2,   // Expect 2 speakers (adjust as needed)
+    language_code: "tr",    // Turkish
+    punctuate: true,        // Add punctuation
+    format_text: true,      // Format the text properly
   }, {
     headers: { authorization: apiKey }
   });
