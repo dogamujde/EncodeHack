@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "transcriptFile": "job_interview___two_speaker_transcript.json",
+    "analysisDate": "2025-06-20T17:33:45.236Z",
+    "expectedSpeakers": 2,
+    "detectedSpeakers": 2
+  },
+  "speakers": {
+    "A": {
+      "words": 196,
+      "segments": 12,
+      "duration": 114.98,
+      "wpm": 102.27865715776656,
+      "percentage": 51.44356955380578
+    },
+    "B": {
+      "words": 185,
+      "segments": 12,
+      "duration": 115.38,
+      "wpm": 96.20384815392616,
+      "percentage": 48.55643044619423
+    }
+  },
+  "summary": {
+    "totalWords": 381,
+    "totalSpeakers": 2,
+    "speakerBalance": 0.9438775510204082,
+    "confidence": 0.9888832
+  }
+}

@@ -1,0 +1,554 @@
+{
+  "timestamp": "2025-06-20T17:37:03.799Z",
+  "analysis": {
+    "totalDuration": 120580,
+    "segments": [
+      {
+        "text": "Good afternoon. You must be Mr. Wang.",
+        "speaker": "A",
+        "startTime": 3360,
+        "endTime": 4960,
+        "duration": 1600,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "good"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Yes, good afternoon.",
+        "speaker": "B",
+        "startTime": 5200,
+        "endTime": 6120,
+        "duration": 920,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "good"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Pleased to meet you. I'm Mrs. Clark, the bank manager. Please have a seat.",
+        "speaker": "A",
+        "startTime": 6120,
+        "endTime": 9440,
+        "duration": 3320,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "pleased"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Thank you.",
+        "speaker": "B",
+        "startTime": 9440,
+        "endTime": 10000,
+        "duration": 560,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "So, tell me a little bit about yourself, Mr. Wang.",
+        "speaker": "A",
+        "startTime": 12560,
+        "endTime": 15040,
+        "duration": 2480,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Well, I grew up in China and studied accounting. Then I worked at an accounting firm there for two years before coming to the States. I work well with others and I like to challenge myself to constantly improve my skills.",
+        "speaker": "B",
+        "startTime": 15120,
+        "endTime": 26160,
+        "duration": 11040,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "like"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "That's great. As you know, this job is for a bank teller. What would you say are some of your strengths or skills that might help you succeed in this job?",
+        "speaker": "A",
+        "startTime": 27070,
+        "endTime": 35870,
+        "duration": 8800,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "great"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "My biggest strength is my attention to detail. That has helped me a lot in this line of work. Also, I work well under pressure.",
+        "speaker": "B",
+        "startTime": 36590,
+        "endTime": 44190,
+        "duration": 7600,
+        "sentiment": "NEGATIVE",
+        "confidence": 0.9,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Wonderful. And what would you say are some of your weaknesses?",
+        "speaker": "A",
+        "startTime": 44750,
+        "endTime": 48270,
+        "duration": 3520,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "wonderful"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "One of my biggest weaknesses is asking for help when I need it. I'd like to do better at that.",
+        "speaker": "B",
+        "startTime": 49390,
+        "endTime": 54460,
+        "duration": 5070,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "like"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "I appreciate your honesty, Mr. Wayne. What can you tell me about some of your goals over the next few years?",
+        "speaker": "A",
+        "startTime": 55660,
+        "endTime": 61100,
+        "duration": 5440,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "My primary goal is to gain more work experience. So a position like this would help me meet that goal. I'd also like to learn more about the different aspects of banking.",
+        "speaker": "B",
+        "startTime": 61740,
+        "endTime": 70620,
+        "duration": 8880,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "like",
+          "like"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "I think those goals are very smart. I also want to ask you what salary range you'd be most comfortable with.",
+        "speaker": "A",
+        "startTime": 70780,
+        "endTime": 77100,
+        "duration": 6320,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "I would be hoping to start somewhere between 35,000 and $38,000 a year. Which is based on my experience in education.",
+        "speaker": "B",
+        "startTime": 77260,
+        "endTime": 85170,
+        "duration": 7910,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Thank you. Those are all the questions I have for you today. Do you have any questions for me?",
+        "speaker": "A",
+        "startTime": 86130,
+        "endTime": 91090,
+        "duration": 4960,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Can you tell me about the working hours?",
+        "speaker": "B",
+        "startTime": 91730,
+        "endTime": 93330,
+        "duration": 1600,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "We'd like whoever fills the position to work 9 to 5 each weekday. There may be some occasional overtime.",
+        "speaker": "A",
+        "startTime": 93730,
+        "endTime": 99730,
+        "duration": 6000,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "like"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Alright. Thank you. And when do you expect to be making your decision?",
+        "speaker": "B",
+        "startTime": 99890,
+        "endTime": 104210,
+        "duration": 4320,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "We'll give you a call within a week and and let you know. Do you have any other questions?",
+        "speaker": "A",
+        "startTime": 104770,
+        "endTime": 109060,
+        "duration": 4290,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Not at the moment. Thank you.",
+        "speaker": "B",
+        "startTime": 109380,
+        "endTime": 111220,
+        "duration": 1840,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Well, if you think of any more, you're always welcome to call me.",
+        "speaker": "A",
+        "startTime": 111300,
+        "endTime": 114260,
+        "duration": 2960,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Thank you so much.",
+        "speaker": "B",
+        "startTime": 114340,
+        "endTime": 115300,
+        "duration": 960,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "It was great to meet you. Thanks for coming in today.",
+        "speaker": "A",
+        "startTime": 115380,
+        "endTime": 118340,
+        "duration": 2960,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "great"
+        ],
+        "intensity": "HIGH"
+      },
+      {
+        "text": "Thank you. It was a pleasure meeting you as well.",
+        "speaker": "B",
+        "startTime": 118420,
+        "endTime": 120580,
+        "duration": 2160,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      }
+    ],
+    "trends": [
+      {
+        "timePoint": 3360,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 0.9
+      },
+      {
+        "timePoint": 5200,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 1.8
+      },
+      {
+        "timePoint": 6120,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 2.7
+      },
+      {
+        "timePoint": 9440,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 2.7
+      },
+      {
+        "timePoint": 12560,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 2.7
+      },
+      {
+        "timePoint": 15120,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 3.6
+      },
+      {
+        "timePoint": 27070,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 4.5
+      },
+      {
+        "timePoint": 36590,
+        "sentiment": "NEGATIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 3.6
+      },
+      {
+        "timePoint": 44750,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 4.5
+      },
+      {
+        "timePoint": 49390,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 5.4
+      },
+      {
+        "timePoint": 55660,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 6.300000000000001
+      },
+      {
+        "timePoint": 61740,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 7.200000000000001
+      },
+      {
+        "timePoint": 70780,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 7.200000000000001
+      },
+      {
+        "timePoint": 77260,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 7.200000000000001
+      },
+      {
+        "timePoint": 86130,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 7.200000000000001
+      },
+      {
+        "timePoint": 91730,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 7.200000000000001
+      },
+      {
+        "timePoint": 93730,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 8.100000000000001
+      },
+      {
+        "timePoint": 99890,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 8.100000000000001
+      },
+      {
+        "timePoint": 104770,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 8.100000000000001
+      },
+      {
+        "timePoint": 109380,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 8.100000000000001
+      },
+      {
+        "timePoint": 111300,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 8.100000000000001
+      },
+      {
+        "timePoint": 114340,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 8.100000000000001
+      },
+      {
+        "timePoint": 115380,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "cumulativeScore": 9.000000000000002
+      },
+      {
+        "timePoint": 118420,
+        "sentiment": "NEUTRAL",
+        "confidence": 0.8,
+        "cumulativeScore": 9.000000000000002
+      }
+    ],
+    "speakerSentiments": {
+      "A": {
+        "speaker": "A",
+        "totalUtterances": 12,
+        "positiveCount": 7,
+        "neutralCount": 5,
+        "negativeCount": 0,
+        "averageConfidence": 0.8583333333333335,
+        "overallTone": "POSITIVE",
+        "emotionalRange": 0.4437059837324712,
+        "mostPositiveSegment": {
+          "text": "Good afternoon. You must be Mr. Wang.",
+          "speaker": "A",
+          "startTime": 3360,
+          "endTime": 4960,
+          "duration": 1600,
+          "sentiment": "POSITIVE",
+          "confidence": 0.9,
+          "emotionalWords": [
+            "good"
+          ],
+          "intensity": "HIGH"
+        }
+      },
+      "B": {
+        "speaker": "B",
+        "totalUtterances": 12,
+        "positiveCount": 4,
+        "neutralCount": 7,
+        "negativeCount": 1,
+        "averageConfidence": 0.8416666666666668,
+        "overallTone": "NEUTRAL",
+        "emotionalRange": 0.5356071321407138,
+        "mostPositiveSegment": {
+          "text": "Yes, good afternoon.",
+          "speaker": "B",
+          "startTime": 5200,
+          "endTime": 6120,
+          "duration": 920,
+          "sentiment": "POSITIVE",
+          "confidence": 0.9,
+          "emotionalWords": [
+            "good"
+          ],
+          "intensity": "HIGH"
+        },
+        "mostNegativeSegment": {
+          "text": "My biggest strength is my attention to detail. That has helped me a lot in this line of work. Also, I work well under pressure.",
+          "speaker": "B",
+          "startTime": 36590,
+          "endTime": 44190,
+          "duration": 7600,
+          "sentiment": "NEGATIVE",
+          "confidence": 0.9,
+          "emotionalWords": [],
+          "intensity": "HIGH"
+        }
+      }
+    },
+    "conversationFlow": {
+      "overallSentiment": "POSITIVE",
+      "sentimentShifts": 9,
+      "positivePercentage": 45.83333333333333,
+      "neutralPercentage": 50,
+      "negativePercentage": 4.166666666666666,
+      "emotionalVolatility": 8.100000000000001,
+      "mostPositiveMoment": {
+        "text": "Good afternoon. You must be Mr. Wang.",
+        "speaker": "A",
+        "startTime": 3360,
+        "endTime": 4960,
+        "duration": 1600,
+        "sentiment": "POSITIVE",
+        "confidence": 0.9,
+        "emotionalWords": [
+          "good"
+        ],
+        "intensity": "HIGH"
+      },
+      "mostNegativeMoment": {
+        "text": "My biggest strength is my attention to detail. That has helped me a lot in this line of work. Also, I work well under pressure.",
+        "speaker": "B",
+        "startTime": 36590,
+        "endTime": 44190,
+        "duration": 7600,
+        "sentiment": "NEGATIVE",
+        "confidence": 0.9,
+        "emotionalWords": [],
+        "intensity": "HIGH"
+      }
+    },
+    "insights": [
+      "Overall conversation tone is positive (45.8% positive segments)",
+      "High emotional volatility - frequent sentiment changes (9 shifts)",
+      "Speaker B shows high emotional range - varied expressions",
+      "Peak positive moment at 3.4s: \"Good afternoon. You must be Mr. Wang....\"",
+      "Peak negative moment at 36.6s: \"My biggest strength is my attention to detail. Tha...\""
+    ]
+  },
+  "summary": {
+    "totalSegments": 24,
+    "overallSentiment": "POSITIVE",
+    "sentimentDistribution": {
+      "positive": 45.83333333333333,
+      "neutral": 50,
+      "negative": 4.166666666666666
+    },
+    "emotionalVolatility": 8.100000000000001,
+    "keyInsights": [
+      "Overall conversation tone is positive (45.8% positive segments)",
+      "High emotional volatility - frequent sentiment changes (9 shifts)",
+      "Speaker B shows high emotional range - varied expressions",
+      "Peak positive moment at 3.4s: \"Good afternoon. You must be Mr. Wang....\"",
+      "Peak negative moment at 36.6s: \"My biggest strength is my attention to detail. Tha...\""
+    ]
+  }
+}

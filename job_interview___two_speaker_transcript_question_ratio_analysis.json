@@ -1,0 +1,378 @@
+{
+  "timestamp": "2025-06-20T17:44:24.411Z",
+  "analysis": {
+    "totalDuration": 120580,
+    "questions": [
+      {
+        "text": "So, tell me a little bit about yourself, Mr. Wang.",
+        "speaker": "A",
+        "startTime": 12560,
+        "endTime": 15040,
+        "duration": 2480,
+        "type": "OPEN_ENDED",
+        "category": "INDIRECT",
+        "complexity": "COMPLEX",
+        "confidence": 0.5
+      },
+      {
+        "text": "That's great. As you know, this job is for a bank teller. What would you say are some of your strengths or skills that might help you succeed in this job?",
+        "speaker": "A",
+        "startTime": 27070,
+        "endTime": 35870,
+        "duration": 8800,
+        "type": "LEADING",
+        "category": "CHOICE",
+        "complexity": "COMPLEX",
+        "confidence": 0.8
+      },
+      {
+        "text": "Wonderful. And what would you say are some of your weaknesses?",
+        "speaker": "A",
+        "startTime": 44750,
+        "endTime": 48270,
+        "duration": 3520,
+        "type": "LEADING",
+        "category": "STATEMENT_QUESTION",
+        "complexity": "MODERATE",
+        "confidence": 0.8
+      },
+      {
+        "text": "I appreciate your honesty, Mr. Wayne. What can you tell me about some of your goals over the next few years?",
+        "speaker": "A",
+        "startTime": 55660,
+        "endTime": 61100,
+        "duration": 5440,
+        "type": "OPEN_ENDED",
+        "category": "STATEMENT_QUESTION",
+        "complexity": "COMPLEX",
+        "confidence": 0.8
+      },
+      {
+        "text": "Thank you. Those are all the questions I have for you today. Do you have any questions for me?",
+        "speaker": "A",
+        "startTime": 86130,
+        "endTime": 91090,
+        "duration": 4960,
+        "type": "OPEN_ENDED",
+        "category": "STATEMENT_QUESTION",
+        "complexity": "COMPLEX",
+        "confidence": 0.8
+      },
+      {
+        "text": "Can you tell me about the working hours?",
+        "speaker": "B",
+        "startTime": 91730,
+        "endTime": 93330,
+        "duration": 1600,
+        "type": "CLOSED_ENDED",
+        "category": "YES_NO",
+        "complexity": "SIMPLE",
+        "confidence": 0.95
+      },
+      {
+        "text": "Alright. Thank you. And when do you expect to be making your decision?",
+        "speaker": "B",
+        "startTime": 99890,
+        "endTime": 104210,
+        "duration": 4320,
+        "type": "OPEN_ENDED",
+        "category": "STATEMENT_QUESTION",
+        "complexity": "MODERATE",
+        "confidence": 0.8
+      },
+      {
+        "text": "We'll give you a call within a week and and let you know. Do you have any other questions?",
+        "speaker": "A",
+        "startTime": 104770,
+        "endTime": 109060,
+        "duration": 4290,
+        "type": "OPEN_ENDED",
+        "category": "STATEMENT_QUESTION",
+        "complexity": "COMPLEX",
+        "confidence": 0.8
+      }
+    ],
+    "statements": [
+      {
+        "text": "Good afternoon. You must be Mr. Wang.",
+        "speaker": "A",
+        "startTime": 3360,
+        "endTime": 4960,
+        "duration": 1600,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Yes, good afternoon.",
+        "speaker": "B",
+        "startTime": 5200,
+        "endTime": 6120,
+        "duration": 920,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Pleased to meet you. I'm Mrs. Clark, the bank manager. Please have a seat.",
+        "speaker": "A",
+        "startTime": 6120,
+        "endTime": 9440,
+        "duration": 3320,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Thank you.",
+        "speaker": "B",
+        "startTime": 9440,
+        "endTime": 10000,
+        "duration": 560,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Well, I grew up in China and studied accounting. Then I worked at an accounting firm there for two years before coming to the States. I work well with others and I like to challenge myself to constantly improve my skills.",
+        "speaker": "B",
+        "startTime": 15120,
+        "endTime": 26160,
+        "duration": 11040,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "My biggest strength is my attention to detail. That has helped me a lot in this line of work. Also, I work well under pressure.",
+        "speaker": "B",
+        "startTime": 36590,
+        "endTime": 44190,
+        "duration": 7600,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "One of my biggest weaknesses is asking for help when I need it. I'd like to do better at that.",
+        "speaker": "B",
+        "startTime": 49390,
+        "endTime": 54460,
+        "duration": 5070,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "My primary goal is to gain more work experience. So a position like this would help me meet that goal. I'd also like to learn more about the different aspects of banking.",
+        "speaker": "B",
+        "startTime": 61740,
+        "endTime": 70620,
+        "duration": 8880,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "I think those goals are very smart. I also want to ask you what salary range you'd be most comfortable with.",
+        "speaker": "A",
+        "startTime": 70780,
+        "endTime": 77100,
+        "duration": 6320,
+        "type": "OPINION"
+      },
+      {
+        "text": "I would be hoping to start somewhere between 35,000 and $38,000 a year. Which is based on my experience in education.",
+        "speaker": "B",
+        "startTime": 77260,
+        "endTime": 85170,
+        "duration": 7910,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "We'd like whoever fills the position to work 9 to 5 each weekday. There may be some occasional overtime.",
+        "speaker": "A",
+        "startTime": 93730,
+        "endTime": 99730,
+        "duration": 6000,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Not at the moment. Thank you.",
+        "speaker": "B",
+        "startTime": 109380,
+        "endTime": 111220,
+        "duration": 1840,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Well, if you think of any more, you're always welcome to call me.",
+        "speaker": "A",
+        "startTime": 111300,
+        "endTime": 114260,
+        "duration": 2960,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Thank you so much.",
+        "speaker": "B",
+        "startTime": 114340,
+        "endTime": 115300,
+        "duration": 960,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "It was great to meet you. Thanks for coming in today.",
+        "speaker": "A",
+        "startTime": 115380,
+        "endTime": 118340,
+        "duration": 2960,
+        "type": "DECLARATIVE"
+      },
+      {
+        "text": "Thank you. It was a pleasure meeting you as well.",
+        "speaker": "B",
+        "startTime": 118420,
+        "endTime": 120580,
+        "duration": 2160,
+        "type": "DECLARATIVE"
+      }
+    ],
+    "speakerPatterns": {
+      "A": {
+        "speaker": "A",
+        "totalUtterances": 12,
+        "questionCount": 6,
+        "statementCount": 6,
+        "questionRatio": 0.5,
+        "questionToStatementRatio": 1,
+        "averageQuestionLength": 4915,
+        "questionTypes": {
+          "OPEN_ENDED": 4,
+          "LEADING": 2
+        },
+        "questionCategories": {
+          "INDIRECT": 1,
+          "CHOICE": 1,
+          "STATEMENT_QUESTION": 4
+        },
+        "questionComplexity": {
+          "COMPLEX": 5,
+          "MODERATE": 1
+        },
+        "longestQuestion": {
+          "text": "That's great. As you know, this job is for a bank teller. What would you say are some of your strengths or skills that might help you succeed in this job?",
+          "speaker": "A",
+          "startTime": 27070,
+          "endTime": 35870,
+          "duration": 8800,
+          "type": "LEADING",
+          "category": "CHOICE",
+          "complexity": "COMPLEX",
+          "confidence": 0.8
+        },
+        "shortestQuestion": {
+          "text": "So, tell me a little bit about yourself, Mr. Wang.",
+          "speaker": "A",
+          "startTime": 12560,
+          "endTime": 15040,
+          "duration": 2480,
+          "type": "OPEN_ENDED",
+          "category": "INDIRECT",
+          "complexity": "COMPLEX",
+          "confidence": 0.5
+        },
+        "mostComplexQuestion": {
+          "text": "So, tell me a little bit about yourself, Mr. Wang.",
+          "speaker": "A",
+          "startTime": 12560,
+          "endTime": 15040,
+          "duration": 2480,
+          "type": "OPEN_ENDED",
+          "category": "INDIRECT",
+          "complexity": "COMPLEX",
+          "confidence": 0.5
+        }
+      },
+      "B": {
+        "speaker": "B",
+        "totalUtterances": 12,
+        "questionCount": 2,
+        "statementCount": 10,
+        "questionRatio": 0.16666666666666666,
+        "questionToStatementRatio": 0.2,
+        "averageQuestionLength": 2960,
+        "questionTypes": {
+          "CLOSED_ENDED": 1,
+          "OPEN_ENDED": 1
+        },
+        "questionCategories": {
+          "YES_NO": 1,
+          "STATEMENT_QUESTION": 1
+        },
+        "questionComplexity": {
+          "SIMPLE": 1,
+          "MODERATE": 1
+        },
+        "longestQuestion": {
+          "text": "Alright. Thank you. And when do you expect to be making your decision?",
+          "speaker": "B",
+          "startTime": 99890,
+          "endTime": 104210,
+          "duration": 4320,
+          "type": "OPEN_ENDED",
+          "category": "STATEMENT_QUESTION",
+          "complexity": "MODERATE",
+          "confidence": 0.8
+        },
+        "shortestQuestion": {
+          "text": "Can you tell me about the working hours?",
+          "speaker": "B",
+          "startTime": 91730,
+          "endTime": 93330,
+          "duration": 1600,
+          "type": "CLOSED_ENDED",
+          "category": "YES_NO",
+          "complexity": "SIMPLE",
+          "confidence": 0.95
+        },
+        "mostComplexQuestion": {
+          "text": "Alright. Thank you. And when do you expect to be making your decision?",
+          "speaker": "B",
+          "startTime": 99890,
+          "endTime": 104210,
+          "duration": 4320,
+          "type": "OPEN_ENDED",
+          "category": "STATEMENT_QUESTION",
+          "complexity": "MODERATE",
+          "confidence": 0.8
+        }
+      }
+    },
+    "conversationDynamics": {
+      "totalQuestions": 8,
+      "totalStatements": 16,
+      "overallQuestionRatio": 0.3333333333333333,
+      "questionBalance": 33.33333333333333,
+      "questionDensity": 3.980759661635429,
+      "averageQuestionLength": 4426.25,
+      "averageStatementLength": 4381.25,
+      "questionClusters": [
+        {
+          "startTime": 27070,
+          "endTime": 61100,
+          "questionCount": 3,
+          "speaker": "A"
+        },
+        {
+          "startTime": 86130,
+          "endTime": 109060,
+          "questionCount": 4,
+          "speaker": "A"
+        }
+      ]
+    },
+    "insights": [
+      "High question frequency (4.0 questions/minute) - intensive inquiry",
+      "Speaker A prefers open-ended questions - encourages detailed responses",
+      "2 question clusters detected - periods of intensive inquiry"
+    ]
+  },
+  "summary": {
+    "totalQuestions": 8,
+    "totalStatements": 16,
+    "questionRatio": 0.3333333333333333,
+    "questionBalance": 33.33333333333333,
+    "questionDensity": 3.980759661635429,
+    "speakerCount": 2,
+    "keyInsights": [
+      "High question frequency (4.0 questions/minute) - intensive inquiry",
+      "Speaker A prefers open-ended questions - encourages detailed responses",
+      "2 question clusters detected - periods of intensive inquiry"
+    ]
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "timestamp": "2025-06-20T17:34:09.102Z",
+  "analysis": {
+    "totalDuration": 120580,
+    "overlaps": [],
+    "gaps": [
+      {
+        "type": "pause",
+        "startTime": 4960,
+        "endTime": 5200,
+        "duration": 240,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "silence",
+        "startTime": 10000,
+        "endTime": 12560,
+        "duration": 2560,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 15040,
+        "endTime": 15120,
+        "duration": 80,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 26160,
+        "endTime": 27070,
+        "duration": 910,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 35870,
+        "endTime": 36590,
+        "duration": 720,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 44190,
+        "endTime": 44750,
+        "duration": 560,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "silence",
+        "startTime": 48270,
+        "endTime": 49390,
+        "duration": 1120,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "silence",
+        "startTime": 54460,
+        "endTime": 55660,
+        "duration": 1200,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 61100,
+        "endTime": 61740,
+        "duration": 640,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 70620,
+        "endTime": 70780,
+        "duration": 160,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 77100,
+        "endTime": 77260,
+        "duration": 160,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 85170,
+        "endTime": 86130,
+        "duration": 960,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 91090,
+        "endTime": 91730,
+        "duration": 640,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 93330,
+        "endTime": 93730,
+        "duration": 400,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 99730,
+        "endTime": 99890,
+        "duration": 160,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 104210,
+        "endTime": 104770,
+        "duration": 560,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 109060,
+        "endTime": 109380,
+        "duration": 320,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 111220,
+        "endTime": 111300,
+        "duration": 80,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 114260,
+        "endTime": 114340,
+        "duration": 80,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      },
+      {
+        "type": "pause",
+        "startTime": 115300,
+        "endTime": 115380,
+        "duration": 80,
+        "beforeSpeaker": "B",
+        "afterSpeaker": "A"
+      },
+      {
+        "type": "pause",
+        "startTime": 118340,
+        "endTime": 118420,
+        "duration": 80,
+        "beforeSpeaker": "A",
+        "afterSpeaker": "B"
+      }
+    ],
+    "speakingPatterns": {
+      "A": {
+        "speaker": "A",
+        "totalSpeakingTime": 52650,
+        "averageUtteranceLength": 4387.5,
+        "longestUtterance": 8800,
+        "shortestUtterance": 1600,
+        "utteranceCount": 12,
+        "interruptionsGiven": 0,
+        "interruptionsReceived": 0,
+        "averagePauseBefore": 747,
+        "speakingTurns": 12
+      },
+      "B": {
+        "speaker": "B",
+        "totalSpeakingTime": 52860,
+        "averageUtteranceLength": 4405,
+        "longestUtterance": 11040,
+        "shortestUtterance": 560,
+        "utteranceCount": 12,
+        "interruptionsGiven": 0,
+        "interruptionsReceived": 0,
+        "averagePauseBefore": 385.45454545454544,
+        "speakingTurns": 12
+      }
+    },
+    "conversationFlow": {
+      "totalOverlapTime": 0,
+      "totalSilenceTime": 4880,
+      "overlapPercentage": 0,
+      "silencePercentage": 4.0471056559960195,
+      "speakingEfficiency": 87.50207331232377,
+      "turnTakingSmooth": 52.38095238095239
+    },
+    "insights": [
+      "21 conversation gaps detected, 3 were significant silences",
+      "Frequent long silences - may indicate hesitation or thoughtful pauses"
+    ]
+  },
+  "summary": {
+    "totalOverlaps": 0,
+    "totalGaps": 21,
+    "speakerCount": 2,
+    "conversationFlow": {
+      "totalOverlapTime": 0,
+      "totalSilenceTime": 4880,
+      "overlapPercentage": 0,
+      "silencePercentage": 4.0471056559960195,
+      "speakingEfficiency": 87.50207331232377,
+      "turnTakingSmooth": 52.38095238095239
+    },
+    "keyInsights": [
+      "21 conversation gaps detected, 3 were significant silences",
+      "Frequent long silences - may indicate hesitation or thoughtful pauses"
+    ]
+  }
+}
