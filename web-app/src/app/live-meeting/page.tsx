@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Mic, MicOff, Video, VideoOff, Users, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { useSendMicToAssembly } from '@/hooks/useSendMicToAssembly'
 
 // Types
 interface FeedbackItem {
@@ -28,91 +29,52 @@ export default function LiveMeetingPage() {
   const [coachingStatus, setCoachingStatus] = useState<CoachingStatus>('idle');
   const [showHistory, setShowHistory] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   // Refs for media
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  // NO MORE API CALLS - Pure demo mode
-  console.log('🚀 Live Meeting Demo Mode - No API calls');
+  // Initialize transcription with coaching callbacks
+  const { isConnected: transcriptConnected, error: transcriptError } = useSendMicToAssembly({
+    onSuggestion: (suggestion: string) => {
+      setLiveFeedback(suggestion);
+      addFeedbackItem(suggestion, 'suggestion');
+      setCoachingStatus('active');
+      
+      // Auto-dismiss after 10 seconds
+      setTimeout(() => {
+        setLiveFeedback(null);
+        setCoachingStatus('recent');
+        
+        // Set to idle after 30 seconds total
+        setTimeout(() => setCoachingStatus('idle'), 20000);
+      }, 10000);
+    },
+    onTranscript: (transcript: string) => {
+      setCurrentTranscript(transcript);
+    }
+  });
 
-  // Unified media stream setup
-  const startMediaCapture = async (videoEnabled?: boolean) => {
+  // Camera setup
+  const startCamera = async () => {
     try {
-      setError(null);
-      console.log('🎬 Starting demo media capture...');
-
-      // Use passed parameter or current state
-      const shouldUseVideo = videoEnabled !== undefined ? videoEnabled : isVideoOn;
-
-      // Request both video and audio in one call
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: shouldUseVideo,
-        audio: true // Always request audio for demo
+        video: true,
+        audio: false // Audio handled by transcription hook
       });
-
-      streamRef.current = stream;
-
-      // Set up video if enabled
-      if (shouldUseVideo && videoRef.current) {
+      
+      if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        console.log('✅ Video feed connected to video element');
-      }
-
-      // Set up MediaRecorder for demo (no actual sending)
-      if (isRecording) {
-        // Check for supported MIME types
-        const supportedTypes = [
-          'audio/webm',
-          'audio/mp4',
-          'audio/ogg',
-          'audio/wav'
-        ];
-        
-        let mimeType = '';
-        for (const type of supportedTypes) {
-          if (MediaRecorder.isTypeSupported(type)) {
-            mimeType = type;
-            break;
-          }
-        }
-        
-        if (!mimeType) {
-          console.log('⚠️ No supported audio MIME type found, using default');
-          mediaRecorderRef.current = new MediaRecorder(stream);
-        } else {
-          console.log('✅ Using supported MIME type:', mimeType);
-          mediaRecorderRef.current = new MediaRecorder(stream, { mimeType });
-        }
-
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            console.log('📡 Demo: Audio data captured:', event.data.size, 'bytes (not sent anywhere)');
-          }
-        };
-
-        mediaRecorderRef.current.start(1000); // Record in 1-second chunks
       }
       
-      console.log('✅ Demo media capture started successfully');
-      
-    } catch (err) {
-      console.error('❌ Error accessing media:', err);
-      setError('Failed to access camera/microphone');
+      streamRef.current = stream;
+      setIsVideoOn(true);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
     }
   };
 
-  // Stop all media capture
-  const stopMediaCapture = () => {
-    console.log('🛑 Stopping demo media capture...');
-    
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
-    
+  const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -121,84 +83,11 @@ export default function LiveMeetingPage() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  };
-
-  // Pure demo simulation (NO API CALLS)
-  const startDemoSimulation = () => {
-    console.log('🎭 Starting demo simulation...');
-    setIsConnected(true);
     
-    // Simulate transcript updates (demo only)
-    if (isRecording) {
-      const demoTexts = [
-        'Hello, this is a demo transcript.',
-        'Both camera and microphone are working properly.',
-        'Real-time transcription would appear here.',
-        'Speaking speed and volume are being monitored.'
-      ];
-      
-      let index = 0;
-      const interval = setInterval(() => {
-        if (index < demoTexts.length && isRecording) {
-          setCurrentTranscript(prev => prev + ' ' + demoTexts[index]);
-          index++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 3000);
-    }
+    setIsVideoOn(false);
   };
 
-  // Toggle camera
-  const toggleCamera = async () => {
-    const newVideoState = !isVideoOn;
-    setIsVideoOn(newVideoState);
-    
-    if (newVideoState) {
-      // Starting camera - need to get new stream with video
-      console.log('📹 Starting camera...');
-      await startMediaCapture(true);
-    } else {
-      // Turning off camera - stop current stream and restart with audio only
-      console.log('📹 Stopping camera...');
-      if (streamRef.current) {
-        stopMediaCapture();
-        // If recording is still active, restart with audio only
-        if (isRecording) {
-          setTimeout(() => startMediaCapture(false), 100);
-        }
-      }
-    }
-  };
-
-  // Toggle recording
-  const toggleRecording = async () => {
-    const newRecordingState = !isRecording;
-    setIsRecording(newRecordingState);
-    
-    if (newRecordingState) {
-      // Start recording
-      console.log('🎤 Starting recording...');
-      setCoachingStatus('active');
-      setCurrentTranscript('');
-      await startMediaCapture(); // Use current video state
-      startDemoSimulation(); // No API calls, just demo
-      
-      // Demo feedback after 5 seconds
-      setTimeout(() => {
-        addFeedbackItem('Demo: Your speaking pace is good!', 'speed');
-      }, 5000);
-      
-    } else {
-      // Stop recording
-      console.log('🎤 Stopping recording...');
-      setCoachingStatus('recent');
-      stopMediaCapture();
-      setIsConnected(false);
-    }
-  };
-
-  // Add feedback item
+  // Feedback management
   const addFeedbackItem = (message: string, type: FeedbackItem['type']) => {
     const newFeedback: FeedbackItem = {
       id: Date.now().toString(),
@@ -207,166 +96,25 @@ export default function LiveMeetingPage() {
       type,
       dismissed: false
     };
-    
-    setFeedbackHistory(prev => [newFeedback, ...prev]);
-    setLiveFeedback(message);
-    
-    // Auto-dismiss after 8 seconds
-    setTimeout(() => {
-      setLiveFeedback(null);
-    }, 8000);
+
+    setFeedbackHistory(prev => [newFeedback, ...prev.slice(0, 9)]); // Keep last 10
   };
 
-  // Dismiss feedback
   const dismissFeedback = (id: string) => {
     setFeedbackHistory(prev =>
       prev.map(item => item.id === id ? { ...item, dismissed: true } : item)
     );
   };
 
-  // Initialize real voice transcription (controlled)
+  // Update connection status
   useEffect(() => {
-    let isInitialized = false;
-    let websocket: WebSocket | null = null;
-    let tokenRetryCount = 0;
-    const maxRetries = 3;
-
-    const initializeTranscription = async () => {
-      if (isInitialized || !isRecording) return;
-      
-      try {
-        console.log('🎯 Initializing real transcription...');
-        isInitialized = true;
-        
-        // Get token with retry limit
-        const getToken = async (): Promise<string> => {
-          if (tokenRetryCount >= maxRetries) {
-            throw new Error('Max token retries reached');
-          }
-          
-          tokenRetryCount++;
-          const response = await fetch('/api/assemblyai-token');
-          
-          if (!response.ok) {
-            throw new Error(`Token request failed: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          console.log('✅ Got transcription token');
-          return data.token;
-        };
-
-        const token = await getToken();
-        
-        // Connect to AssemblyAI WebSocket
-        const wsUrl = `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`;
-        websocket = new WebSocket(wsUrl);
-        
-        websocket.onopen = () => {
-          console.log('✅ Transcription WebSocket connected');
-          setIsConnected(true);
-        };
-        
-        websocket.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          
-          if (data.message_type === 'FinalTranscript') {
-            const transcript = data.text;
-            console.log('📝 Transcript:', transcript);
-            
-            // Update live transcript
-            setCurrentTranscript(prev => {
-              const newEntry = `${new Date().toLocaleTimeString()}: ${transcript}`;
-              return prev ? `${prev}\n${newEntry}` : newEntry;
-            });
-            
-            // Generate demo coaching feedback
-            if (transcript.length > 10) {
-              setTimeout(() => {
-                const suggestions = [
-                  "Great pace! Keep speaking clearly.",
-                  "Try to pause between thoughts for better clarity.",
-                  "Excellent articulation - very easy to follow.",
-                  "Consider varying your tone for more engagement."
-                ];
-                
-                const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-                
-                const newFeedback: FeedbackItem = {
-                  id: Date.now().toString(),
-                  message: randomSuggestion,
-                  timestamp: new Date(),
-                  type: 'suggestion',
-                  dismissed: false
-                };
-                
-                setFeedbackHistory(prev => [newFeedback, ...prev]);
-              }, 2000);
-            }
-          }
-        };
-        
-        websocket.onerror = (error) => {
-          console.error('❌ Transcription WebSocket error:', error);
-          setError('Transcription connection error');
-        };
-        
-        websocket.onclose = () => {
-          console.log('🔌 Transcription WebSocket closed');
-          setIsConnected(false);
-        };
-        
-        // Send audio data to WebSocket
-        if (streamRef.current && mediaRecorderRef.current) {
-          mediaRecorderRef.current.ondataavailable = (event) => {
-            if (event.data.size > 0 && websocket?.readyState === WebSocket.OPEN) {
-              // Convert audio data to base64 and send
-              const reader = new FileReader();
-              reader.onload = () => {
-                const audioData = reader.result as ArrayBuffer;
-                const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioData)));
-                websocket?.send(JSON.stringify({
-                  audio_data: base64Audio
-                }));
-              };
-              reader.readAsArrayBuffer(event.data);
-            }
-          };
-        }
-        
-      } catch (error) {
-        console.error('❌ Failed to initialize transcription:', error);
-        setError(`Transcription setup failed: ${error.message}`);
-        isInitialized = false;
-      }
-    };
-
-    // Cleanup function
-    const cleanup = () => {
-      if (websocket) {
-        websocket.close();
-        websocket = null;
-      }
-      isInitialized = false;
-      tokenRetryCount = 0;
-      setIsConnected(false);
-    };
-
-    // Initialize when recording starts
-    if (isRecording) {
-      initializeTranscription();
-    } else {
-      cleanup();
-    }
-
-    // Cleanup on unmount
-    return cleanup;
-  }, [isRecording]); // Only depend on isRecording
+    setIsConnected(transcriptConnected);
+  }, [transcriptConnected]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopMediaCapture();
+      stopCamera();
     };
   }, []);
 
@@ -390,12 +138,6 @@ export default function LiveMeetingPage() {
             <Badge variant={isConnected ? "default" : "destructive"}>
               {isConnected ? "Connected" : "Disconnected"}
             </Badge>
-            
-            {error && (
-              <Badge variant="destructive">
-                Error: {error}
-              </Badge>
-            )}
           </div>
         </div>
 
@@ -435,7 +177,7 @@ export default function LiveMeetingPage() {
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-4 bg-black bg-opacity-50 rounded-lg p-3">
                       <Button
-                        onClick={toggleCamera}
+                        onClick={isVideoOn ? stopCamera : startCamera}
                         variant={isVideoOn ? "default" : "secondary"}
                         size="sm"
                         className="text-white"
@@ -444,7 +186,7 @@ export default function LiveMeetingPage() {
                       </Button>
                       
                       <Button
-                        onClick={toggleRecording}
+                        onClick={() => setIsRecording(!isRecording)}
                         variant={isRecording ? "destructive" : "secondary"}
                         size="sm"
                         className="text-white"
@@ -493,7 +235,7 @@ export default function LiveMeetingPage() {
                     <p className="text-sm text-gray-700">{currentTranscript}</p>
                   ) : (
                     <p className="text-sm text-gray-500 italic">
-                      {isRecording ? "Start speaking to see transcript..." : "Click the microphone button to start recording"}
+                      {isConnected ? "Start speaking to see transcript..." : "Connecting to transcription service..."}
                     </p>
                   )}
                 </div>
@@ -516,81 +258,81 @@ export default function LiveMeetingPage() {
               </CardHeader>
               {showHistory && (
                 <CardContent>
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                  <div className="feedback-history-panel p-3">
                     {feedbackHistory.filter(item => !item.dismissed).length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">No feedback yet. Start speaking to receive coaching!</p>
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        No feedback yet. Start speaking to receive coaching tips!
+                      </p>
                     ) : (
-                      feedbackHistory
-                        .filter(item => !item.dismissed)
-                        .map(item => (
-                          <div key={item.id} className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <Badge variant={
-                                item.type === 'suggestion' ? 'default' :
-                                item.type === 'speed' ? 'secondary' : 'outline'
-                              }>
-                                {item.type}
-                              </Badge>
-                              <Button
-                                onClick={() => dismissFeedback(item.id)}
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
+                      <div className="space-y-2">
+                        {feedbackHistory
+                          .filter(item => !item.dismissed)
+                          .map(item => (
+                            <div
+                              key={item.id}
+                              className={`p-3 rounded-lg border-l-4 ${
+                                item.type === 'speed' ? 'border-yellow-400 bg-yellow-50' :
+                                item.type === 'volume' ? 'border-red-400 bg-red-50' :
+                                'border-blue-400 bg-blue-50'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="text-sm font-medium capitalize">{item.type}</p>
+                                  <p className="text-sm text-gray-700 mt-1">{item.message}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {item.timestamp.toLocaleTimeString()}
+                                  </p>
+                                </div>
+                                <Button
+                                  onClick={() => dismissFeedback(item.id)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-700 mb-1">{item.message}</p>
-                            <p className="text-xs text-gray-500">
-                              {item.timestamp.toLocaleTimeString()}
-                            </p>
-                          </div>
-                        ))
+                          ))}
+                      </div>
                     )}
                   </div>
                 </CardContent>
               )}
             </Card>
+
+            {/* Session Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Session Stats</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <Badge variant={isConnected ? "default" : "destructive"}>
+                      {isConnected ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Camera:</span>
+                    <Badge variant={isVideoOn ? "default" : "secondary"}>
+                      {isVideoOn ? "On" : "Off"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Feedback Items:</span>
+                    <span className="text-sm font-medium">
+                      {feedbackHistory.filter(item => !item.dismissed).length}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-      
-      {/* CSS for coaching status indicator */}
-      <style jsx>{`
-        .coaching-status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background-color: #6b7280;
-        }
-        
-        .coaching-status-dot.active {
-          background-color: #10b981;
-          animation: pulse 2s infinite;
-        }
-        
-        .coaching-status-dot.recent {
-          background-color: #f59e0b;
-        }
-        
-        .coaching-feedback-overlay {
-          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-          border: 1px solid #3b82f6;
-          border-radius: 8px;
-          padding: 16px;
-        }
-        
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 0.8;
-          }
-        }
-      `}</style>
     </div>
   );
 } 
