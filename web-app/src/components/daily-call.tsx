@@ -7,29 +7,39 @@ interface DailyCallProps {
   onTranscript?: (transcript: string) => void;
   onFeedback?: (feedback: string[]) => void;
   mediaStream: MediaStream;
+  onJoinedMeeting?: () => void;
+  onAudioTrackStarted?: (track: MediaStreamTrack) => void;
 }
 
 export const DailyCall: React.FC<DailyCallProps> = ({ 
   onTranscript,
   onFeedback,
-  mediaStream
+  mediaStream,
+  onJoinedMeeting,
+  onAudioTrackStarted
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const callObjectRef = useRef<any>(null);
-  const isInitialized = useRef(false);
+
+  // Store callbacks in refs to prevent useEffect from re-running
+  const onJoinedMeetingRef = useRef(onJoinedMeeting);
+  const onAudioTrackStartedRef = useRef(onAudioTrackStarted);
 
   useEffect(() => {
-    if (isInitialized.current) {
+    onJoinedMeetingRef.current = onJoinedMeeting;
+    onAudioTrackStartedRef.current = onAudioTrackStarted;
+  });
+
+  useEffect(() => {
+    if (!mediaStream || callObjectRef.current) {
       return;
     }
-    isInitialized.current = true;
 
     const container = containerRef.current;
     if (!container) {
       return;
     }
 
-    // This effect runs only once on mount
     const callObject = DailyIframe.createFrame(container, {
       showLeaveButton: true,
       iframeStyle: {
@@ -42,11 +52,18 @@ export const DailyCall: React.FC<DailyCallProps> = ({
     callObjectRef.current = callObject;
 
     const handleEvent = (event: any) => {
+      console.log('[DailyCall] Received event:', event.action, event);
       switch (event.action) {
         case 'track-started':
+          if (event.track.kind === 'audio' && onAudioTrackStartedRef.current) {
+            console.log('[DailyCall] Audio track started, calling onAudioTrackStarted.');
+            onAudioTrackStartedRef.current(event.track);
+          } else if (event.track.kind === 'video') {
+            console.log('[DailyCall] Video track started.');
+          }
           break;
         case 'error':
-          console.error('Daily call error:', event);
+          console.error('[DailyCall] Daily call error:', event);
           break;
         default:
           break;
@@ -72,17 +89,22 @@ export const DailyCall: React.FC<DailyCallProps> = ({
       
     // Once we've joined, immediately set the input devices to our custom stream
     callObject.once('joined-meeting', () => {
+      console.log('[DailyCall] Successfully joined meeting. Setting input devices.');
+      if (onJoinedMeetingRef.current) {
+        onJoinedMeetingRef.current();
+      }
       callObject.setInputDevicesAsync({
         videoSource: mediaStream.getVideoTracks()[0],
         audioSource: mediaStream.getAudioTracks()[0],
-      }).catch(err => console.error("[DailyCall] setInputDevicesAsync failed:", err));
+      })
+      .then(() => console.log('[DailyCall] setInputDevicesAsync successful.'))
+      .catch(err => console.error("[DailyCall] setInputDevicesAsync failed:", err));
     });
 
     return () => {
       // This cleanup runs only once on unmount
       callObjectRef.current?.destroy();
       callObjectRef.current = null;
-      isInitialized.current = false;
     };
   }, [mediaStream]);
 

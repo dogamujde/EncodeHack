@@ -5,58 +5,24 @@ import { RealtimeTranscriber, SessionInformation } from 'assemblyai';
 
 const ASSEMBLYAI_API_BASE_URL = "https://api.assemblyai.com/v2";
 
-// Helper function to convert float32 to base64-encoded PCM16
-const bufferToBase64 = (buffer: Float32Array) => {
-  const pcm16 = new Int16Array(buffer.length);
-  for (let i = 0; i < buffer.length; i++) {
-    // Clamp the sample to the [-1, 1] range
-    let s = Math.max(-1, Math.min(1, buffer[i]));
-    // Convert to 16-bit integer
-    s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-    pcm16[i] = s;
-  }
-  // Convert to base64
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(pcm16.buffer) as any));
-};
-
 export interface UseAssemblyAITranscriberOptions {
   onTranscript: (transcript: any) => void;
+  onSessionInfo?: (info: SessionInformation) => void;
   onError?: (error: Error) => void;
   onClose?: (code: number, reason: string) => void;
 }
 
 export const useAssemblyAITranscriber = ({
   onTranscript,
+  onSessionInfo,
   onError,
   onClose,
 }: UseAssemblyAITranscriberOptions) => {
   const [isReady, setIsReady] = useState(false);
-  const isReadyRef = useRef(false); // Ref to track ready state for callbacks
-
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const isConnectedRef = useRef(false);
   
-  const onTranscriptRef = useRef(onTranscript);
-  const onErrorRef = useRef(onError);
-  const onCloseRef = useRef(onClose);
-
-  useEffect(() => {
-    onTranscriptRef.current = onTranscript;
-  }, [onTranscript]);
-
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
-  
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  // Update ref whenever state changes
-  useEffect(() => {
-    isReadyRef.current = isReady;
-  }, [isReady]);
-
   const transcriberRef = useRef<RealtimeTranscriber | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const microphoneStreamRef = useRef<MediaStream | null>(null);
@@ -90,27 +56,33 @@ export const useAssemblyAITranscriber = ({
         console.log("[AssemblyAI] Transcriber object created successfully. Attaching event listeners.");
 
         newTranscriber.on('open', (info) => {
-          console.log('[AssemblyAI] Connection opened:', info);
+          console.log('[AssemblyAI] RAW OPEN INFO:', info); // Log the raw object
+          const sessionInfo: SessionInformation = {
+            message_type: 'SessionInformation', // This is a guess, but required by the type
+            ...info
+          };
+          console.log('[AssemblyAI] Connection opened:', sessionInfo);
           setIsConnected(true);
+          isConnectedRef.current = true;
+          onSessionInfo?.(sessionInfo);
           setIsReady(true);
-          resolve(); 
+          resolve();
         });
 
-        newTranscriber.on('transcript', (transcript) => {
-          onTranscriptRef.current(transcript);
-        });
+        newTranscriber.on('transcript', onTranscript);
 
         newTranscriber.on('error', (error) => {
           console.error('AssemblyAI Error:', error);
-          onErrorRef.current?.(error);
-          stop(); 
-          reject(error); 
+          onError?.(error);
+          stop();
+          reject(error);
         });
 
         newTranscriber.on('close', (code, reason) => {
           console.log('[AssemblyAI] Connection closed:', code, reason);
           setIsConnected(false);
-          onCloseRef.current?.(code, reason);
+          isConnectedRef.current = false;
+          onClose?.(code, reason);
         });
 
         console.log("[AssemblyAI] Event listeners attached. Connecting to AssemblyAI...");
@@ -120,7 +92,7 @@ export const useAssemblyAITranscriber = ({
         transcriberRef.current = newTranscriber;
 
         if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+          audioContextRef.current = new AudioContext();
         }
         
         microphoneStreamRef.current = mediaStream;
@@ -130,36 +102,25 @@ export const useAssemblyAITranscriber = ({
         console.log("[AssemblyAI] AudioWorklet module added.");
         
         const processorNode = new AudioWorkletNode(audioContextRef.current, 'audio-processor');
-        processorNodeRef.current = processorNode;
-        
         processorNode.port.onmessage = (event) => {
-          if (transcriberRef.current && isReadyRef.current) {
-            const float32Data = new Float32Array(event.data);
-            
-            // Convert Float32Array to Int16Array
-            const pcm16Data = new Int16Array(float32Data.length);
-            for (let i = 0; i < float32Data.length; i++) {
-              let s = Math.max(-1, Math.min(1, float32Data[i]));
-              s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-              pcm16Data[i] = s;
-            }
-            
-            // Send the Int16Array's buffer
-            transcriberRef.current.sendAudio(pcm16Data.buffer);
+          if (transcriberRef.current && isConnectedRef.current) {
+            transcriberRef.current.sendAudio(event.data);
           }
         };
         
         source.connect(processorNode);
         processorNode.connect(audioContextRef.current.destination);
+        processorNodeRef.current = processorNode;
+
       } catch (err) {
         console.error("Error during AssemblyAI setup:", err);
-        if (onErrorRef.current) onErrorRef.current(err as Error);
+        if (onError) onError(err as Error);
         reject(err);
       } finally {
         isSettingUp.current = false;
       }
     });
-  }, []); // REMOVED isReady from dependency array
+  }, [onTranscript, onSessionInfo, onError, onClose]);
 
   const start = useCallback(() => {
     if (transcriberRef.current) {
@@ -194,6 +155,7 @@ export const useAssemblyAITranscriber = ({
     isSettingUp.current = false;
     setIsReady(false);
     setIsConnected(false);
+    isConnectedRef.current = false;
   }, []);
 
   return { isReady, isRecording, isConnected, setup, start, stop };

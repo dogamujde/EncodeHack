@@ -1,31 +1,17 @@
 // public/audio-worklets/audio-processor.js
-class AudioProcessor extends AudioWorkletProcessor {
-  constructor() {
-    super();
-  }
 
+class AudioProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     const input = inputs[0];
-    if (input.length > 0) {
-      const pcmData = new Int16Array(input[0].length);
-      for (let i = 0; i < input[0].length; i++) {
-        pcmData[i] = input[0][i] * 32767;
+    if (input && input.length > 0) {
+      const channelData = input[0]; // Using the first channel for mono
+      if (channelData) {
+        // Post the raw Float32Array data's buffer.
+        // The buffer is transferred, not copied, for performance.
+        this.port.postMessage(channelData.buffer, [channelData.buffer]);
       }
-      
-      const base64 = this.toBase64(pcmData.buffer);
-      this.port.postMessage({ audio_data: base64 });
     }
-    return true;
-  }
-
-  toBase64(buffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+    return true; // Keep processor alive
   }
 }
 
