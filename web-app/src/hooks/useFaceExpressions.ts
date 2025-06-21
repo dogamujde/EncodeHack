@@ -28,6 +28,7 @@ interface UseFaceExpressionsProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   isReady: boolean;
+  showMesh: boolean;
   expressionThresholds?: Partial<Record<keyof typeof defaultThresholds, number>>;
 }
 
@@ -74,6 +75,7 @@ export const useFaceExpressions = ({
   videoRef,
   canvasRef,
   isReady,
+  showMesh,
   expressionThresholds: customThresholds,
 }: UseFaceExpressionsProps) => {
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
@@ -213,15 +215,28 @@ export const useFaceExpressions = ({
       const container = canvas.parentElement;
       if (container) {
         const containerAspectRatio = container.clientWidth / container.clientHeight;
-        let scale = 1;
-        if (containerAspectRatio > videoAspectRatio) {
-          scale = container.clientWidth / video.videoWidth;
+        
+        let renderedWidth, renderedHeight;
+        if (videoAspectRatio > containerAspectRatio) {
+            renderedWidth = container.clientWidth;
+            renderedHeight = renderedWidth / videoAspectRatio;
         } else {
-          scale = container.clientHeight / video.videoHeight;
+            renderedHeight = container.clientHeight;
+            renderedWidth = renderedHeight * videoAspectRatio;
         }
-        canvas.style.transform = `scaleX(-1) scale(${scale})`;
+
+        const offsetX = (container.clientWidth - renderedWidth) / 2;
+        const offsetY = (container.clientHeight - renderedHeight) / 2;
+
+        canvas.style.width = `${renderedWidth}px`;
+        canvas.style.height = `${renderedHeight}px`;
+        canvas.style.left = `${offsetX}px`;
+        canvas.style.top = `${offsetY}px`;
+        canvas.style.transform = 'scaleX(-1)';
+        canvas.classList.add('pointer-events-none');
       } else {
         canvas.style.transform = 'scaleX(-1)';
+        canvas.classList.add('pointer-events-none');
       }
 
       isDetecting.current = true;
@@ -235,24 +250,19 @@ export const useFaceExpressions = ({
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Flip the context horizontally to counteract the CSS mirroring
-        canvasCtx.scale(-1, 1);
-        canvasCtx.translate(-canvas.width, 0);
-
         const drawingUtils = new DrawingUtils(canvasCtx);
-        if (results.faceLandmarks) {
-          // Drawing is disabled to hide the mesh
-          // for (const landmarks of results.faceLandmarks) {
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
-          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
-          // }
+        if (showMesh && results.faceLandmarks) {
+          for (const landmarks of results.faceLandmarks) {
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
+          }
         }
         canvasCtx.restore();
       }
@@ -294,7 +304,7 @@ export const useFaceExpressions = ({
           faceLandmarkerRef.current = null;
       }
     };
-  }, [isReady, videoRef, canvasRef]);
+  }, [isReady, showMesh, videoRef, canvasRef]);
 
   return analysis;
 }; 

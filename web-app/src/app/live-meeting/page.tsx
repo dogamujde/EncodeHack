@@ -19,6 +19,8 @@ export default function LiveMeetingPage() {
   const [feedback, setFeedback] = useState<string[]>([]);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [isReadyForAnalysis, setIsReadyForAnalysis] = useState(false);
+  const [showMesh, setShowMesh] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -37,6 +39,11 @@ export default function LiveMeetingPage() {
     })
     .catch(err => {
       console.error('[LiveMeetingPage] Error getting user media:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setPermissionError('Camera and microphone access was denied. Please allow access in your browser settings and refresh the page.');
+      } else {
+        setPermissionError(`An error occurred while accessing media devices: ${err.message}. Please check your hardware and browser settings.`);
+      }
     });
 
     // Cleanup: stop the stream when the component unmounts
@@ -61,19 +68,22 @@ export default function LiveMeetingPage() {
   const expressionAnalysis = useFaceExpressions({ 
     videoRef, 
     canvasRef, 
-    isReady: isReadyForAnalysis 
+    isReady: isReadyForAnalysis,
+    showMesh,
   });
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
       {/* Hidden elements for face analysis */}
       <video ref={videoRef} autoPlay playsInline muted className="hidden"></video>
-      <canvas ref={canvasRef} className="hidden"></canvas>
       
       <div className="flex-1 flex flex-col p-4 gap-4">
         <h1 className="text-2xl font-bold">Live Coaching Session</h1>
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden">
+            {/* The canvas is positioned absolutely within this container, on top of the Daily iframe */}
+            <canvas ref={canvasRef} className="absolute z-10 pointer-events-none"></canvas>
+            
             {mediaStream ? (
               <DailyCall 
                 onTranscript={setTranscript} 
@@ -81,8 +91,12 @@ export default function LiveMeetingPage() {
                 mediaStream={mediaStream}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <p>Waiting for camera permissions...</p>
+              <div className="w-full h-full flex items-center justify-center text-center p-4">
+                {permissionError ? (
+                  <p className="text-red-400">{permissionError}</p>
+                ) : (
+                  <p>Waiting for camera permissions...</p>
+                )}
               </div>
             )}
           </div>
@@ -110,7 +124,12 @@ export default function LiveMeetingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-48">
           {/* Expression Analysis */}
           <div className="md:col-span-3 bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
-             <h3 className="text-lg font-bold mb-2">Expression Analysis</h3>
+            <div className="flex justify-between items-start">
+              <h3 className="text-lg font-bold mb-2">Expression Analysis</h3>
+              <Button onClick={() => setShowMesh(!showMesh)} variant="outline" size="sm">
+                {showMesh ? 'Hide' : 'Show'} Face Mesh
+              </Button>
+            </div>
              <div className="flex-1 overflow-y-auto text-sm pr-2">
                 <p className="mb-2">
                   <span className="font-semibold">Detected Expressions: </span>
