@@ -253,7 +253,7 @@ export const useFaceExpressions = ({
       }
       faceLandmarkerRef.current?.close();
     };
-  }, [videoRef, canvasRef, expressionThresholds]);
+  }, [videoRef, canvasRef]);
 
   return analysis;
 }; 
