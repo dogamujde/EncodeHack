@@ -31,6 +31,7 @@ export default function LiveMeetingPage() {
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [metrics, setMetrics] = useState<{ wpm: number; confidence: number; avgConfidence: number; total: number; finals: number; sessionSec: number } | null>(null);
 
   // Refs for media
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -163,7 +164,8 @@ export default function LiveMeetingPage() {
     onTranscript: (transcript: string) => {
       console.log('📝 Received transcript:', transcript);
       setCurrentTranscript(transcript);
-    }
+    },
+    onMetrics: setMetrics,
   });
 
   // Feedback management
@@ -217,14 +219,20 @@ export default function LiveMeetingPage() {
       const source = audioContextRef.current.createMediaStreamSource(mediaStream);
       source.connect(analyserRef.current);
 
-      analyserRef.current.fftSize = 256;
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.fftSize = 1024;
+      const dataArray = new Uint8Array(analyserRef.current.fftSize);
 
       const updateAudioLevel = () => {
         if (analyserRef.current) {
-          analyserRef.current.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-          setAudioLevel(Math.round(average));
+          analyserRef.current.getByteTimeDomainData(dataArray);
+          let sumSquares = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            const sample = (dataArray[i] - 128) / 128; // normalize to [-1,1]
+            sumSquares += sample * sample;
+          }
+          const rms = Math.sqrt(sumSquares / dataArray.length); // 0..1
+          const percent = Math.min(100, Math.round(rms * 2000)); // empirical scaling
+          setAudioLevel(percent);
         }
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
       };
@@ -476,6 +484,32 @@ export default function LiveMeetingPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Metrics Dashboard */}
+            {metrics && (
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mt-4">
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Confidence %</p>
+                  <p className="text-xl font-semibold">{(metrics.confidence * 100).toFixed(1)}%</p>
+                </Card>
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Avg Confidence</p>
+                  <p className="text-xl font-semibold">{(metrics.avgConfidence * 100).toFixed(1)}%</p>
+                </Card>
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Words / Min</p>
+                  <p className="text-xl font-semibold">{metrics.wpm.toFixed(0)}</p>
+                </Card>
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Total Segments</p>
+                  <p className="text-xl font-semibold">{metrics.total}</p>
+                </Card>
+                <Card className="p-4 text-center col-span-3 md:col-span-5">
+                  <p className="text-sm text-muted-foreground mb-2">Session Time</p>
+                  <p className="text-xl font-semibold">{Math.floor(metrics.sessionSec/60).toString().padStart(2,'0')}:{(metrics.sessionSec%60).toString().padStart(2,'0')}</p>
+                </Card>
+              </div>
+            )}
           </div>
         </div>
       </div>
