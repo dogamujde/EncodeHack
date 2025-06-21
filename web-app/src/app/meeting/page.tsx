@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Mic, 
   MicOff, 
@@ -17,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button'
 
 export default function LiveMeetingPage() {
+  const router = useRouter()
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [selectedAudioDevice, setSelectedAudioDevice] = useState('computer')
@@ -32,7 +34,7 @@ export default function LiveMeetingPage() {
         if (isVideoOn) {
           const mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { width: 640, height: 480 },
-            audio: true
+            audio: false // Don't request audio here to avoid conflicts
           })
           setStream(mediaStream)
           if (videoRef.current) {
@@ -69,6 +71,23 @@ export default function LiveMeetingPage() {
         track.enabled = isMuted
       })
     }
+  }
+
+  const handleJoinNow = () => {
+    // Stop current stream before navigating
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+    }
+    // Navigate to live-meeting page
+    router.push('/live-meeting')
+  }
+
+  const handleCancel = () => {
+    // Stop current stream and go back to home
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+    }
+    router.push('/')
   }
 
   return (
@@ -246,10 +265,10 @@ export default function LiveMeetingPage() {
 
       {/* Bottom Buttons */}
       <div className="flex justify-center gap-4 pb-8">
-        <button className="px-6 py-2 border border-gray-500 text-gray-300 rounded hover:bg-gray-700 transition-colors">
+        <button className="px-6 py-2 border border-gray-500 text-gray-300 rounded hover:bg-gray-700 transition-colors" onClick={handleCancel}>
           Cancel
         </button>
-        <button className="px-8 py-2 bg-[#6264A7] text-white rounded hover:bg-[#5558A0] transition-colors">
+        <button className="px-8 py-2 bg-[#6264A7] text-white rounded hover:bg-[#5558A0] transition-colors" onClick={handleJoinNow}>
           Join now
         </button>
       </div>
