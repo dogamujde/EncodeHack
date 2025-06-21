@@ -27,6 +27,7 @@ interface ExpressionAnalysis {
 interface UseFaceExpressionsProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  expressionThresholds?: Partial<{ [key: string]: number }>;
 }
 
 // --- Mappings ---
@@ -52,69 +53,97 @@ const blendshapeToExpression: { [key: string]: string } = {
   mouthFrownRight: 'Sad',
   mouthPressLeft: 'Thinking',
   mouthPressRight: 'Thinking',
+  // Note: 'Confused' is a derived expression, but we can add a placeholder
+  // if needed, or handle it purely in logic. For now, let's rely on the logic.
 };
 
-export const useFaceExpressions = ({ videoRef, canvasRef }: UseFaceExpressionsProps) => {
+const ALL_EXPRESSIONS = [
+  'Angry', 'Curious', 'Surprised', 'Focused', 'Fear', 'Joy',
+  'Disgust', 'Happy', 'Sad', 'Thinking', 'Confused'
+];
+
+const initialAnalysisState: ExpressionAnalysis = {
+  dominantExpression: 'Neutral',
+  activeExpressions: [],
+  expressions: Object.fromEntries(ALL_EXPRESSIONS.map(e => [e, 0])),
+};
+
+const defaultThresholds: { [key: string]: number } = {
+  'Curious': 0.3, 'Angry': 0.4, 'Surprised': 0.5,
+  'Focused': 0.3, 'Happy': 0.4, 'Sad': 0.3,
+  'Fear': 0.4, 'Thinking': 0.3, 'Confused': 0.3
+};
+
+export const useFaceExpressions = ({ 
+  videoRef, 
+  canvasRef, 
+  expressionThresholds: customThresholds 
+}: UseFaceExpressionsProps) => {
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
-  const [analysis, setAnalysis] = useState<ExpressionAnalysis>({ dominantExpression: 'Neutral', activeExpressions: [], expressions: {} });
+  const [analysis, setAnalysis] = useState<ExpressionAnalysis>(initialAnalysisState);
   const animationFrameId = useRef<number | null>(null);
   const lastVideoTimeRef = useRef(-1);
+  const smoothedScoresRef = useRef<{ [key:string]: number }>({ ...initialAnalysisState.expressions });
+
+  const expressionThresholds = { ...defaultThresholds, ...customThresholds };
 
   const analyzeBlendshapes = (blendshapes: Classifications[]) => {
-    if (!blendshapes || blendshapes.length === 0) {
-      setAnalysis({ dominantExpression: 'Neutral', activeExpressions: [], expressions: {} });
-      return;
-    }
-
-    const categories = blendshapes[0].categories;
-    const expressionScores: { [key: string]: number } = {};
-    
-    // Aggregate scores for each expression by taking the max of left/right
-    for (const category of categories) {
-      const expression = blendshapeToExpression[category.categoryName];
-      if (expression) {
-        if (!expressionScores[expression]) {
-          expressionScores[expression] = 0;
+    // 1. Get raw scores
+    const rawScores: { [key: string]: number } = { ...initialAnalysisState.expressions };
+    if (blendshapes && blendshapes.length > 0) {
+      const categories = blendshapes[0].categories;
+      for (const category of categories) {
+        const expression = blendshapeToExpression[category.categoryName];
+        if (expression) {
+          rawScores[expression] = Math.max(rawScores[expression], category.score);
         }
-        expressionScores[expression] = Math.max(expressionScores[expression], category.score);
       }
     }
 
-    const activeExpressions = new Set<string>();
-    const expressionThresholds: { [key: string]: number } = {
-      'Curious': 0.3, 'Angry': 0.3, 'Surprised': 0.5,
-      'Focused': 0.3, 'Happy': 0.4, 'Sad': 0.3,
-      'Disgust': 0.4, 'Fear': 0.4, 'Joy': 0.4,
-      'Thinking': 0.3
-    };
-
-    // Check for single expressions based on thresholds
-    for (const [expression, score] of Object.entries(expressionScores)) {
-        const threshold = (expressionThresholds as any)[expression];
-        if (threshold && score > threshold) {
-            activeExpressions.add(expression);
-        }
+    // 2. Smooth base expressions
+    const smoothingFactor = 0.2;
+    const currentSmoothed = smoothedScoresRef.current;
+    const newSmoothedScores: { [key: string]: number } = {};
+    for (const key in rawScores) {
+      if (key === 'Confused') continue;
+      newSmoothedScores[key] = (currentSmoothed[key] * (1 - smoothingFactor)) + (rawScores[key] * smoothingFactor);
     }
-
-    // Check for combined expressions
-    if (expressionScores['Angry'] > 0.25 && expressionScores['Curious'] > 0.25) {
-        activeExpressions.add('Confused');
-        activeExpressions.delete('Angry');
-        activeExpressions.delete('Curious');
+    
+    // 3. Derive and smooth 'Confused' score
+    const potentialConfusedScore = (newSmoothedScores['Angry'] + newSmoothedScores['Thinking']) / 2;
+    if (potentialConfusedScore > currentSmoothed['Confused']) {
+      newSmoothedScores['Confused'] = potentialConfusedScore;
+    } else {
+      newSmoothedScores['Confused'] = currentSmoothed['Confused'] * (1 - smoothingFactor);
     }
-    if (expressionScores['Happy'] > 0.6 && expressionScores['Joy'] > 0.4) {
-        activeExpressions.add('Ecstatic');
-        activeExpressions.delete('Happy');
-        activeExpressions.delete('Joy');
+    smoothedScoresRef.current = newSmoothedScores;
+
+    // 4. Determine active and dominant expressions from sorted, smoothed scores
+    const sortedExpressions = Object.entries(newSmoothedScores)
+      .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+
+    let activeExpressions = sortedExpressions
+      .filter(([expression, score]) => score > (expressionThresholds[expression] || 0))
+      .map(([expression]) => expression);
+
+    let dominantExpression = activeExpressions.length > 0 ? activeExpressions[0] : 'Neutral';
+
+    // Special Rule: If 'Confused' is dominant, suppress related expressions
+    if (dominantExpression === 'Confused') {
+      activeExpressions = activeExpressions.filter(
+        exp => exp !== 'Angry' && exp !== 'Thinking' && exp !== 'Focused'
+      );
+      // Ensure 'Confused' remains if it was filtered out (in case its score is lower than a suppressed one)
+      if (!activeExpressions.includes('Confused')) {
+        activeExpressions.unshift('Confused');
+      }
     }
-
-    // Determine a single "dominant" expression to display, can be refined
-    const dominantExpression = activeExpressions.size > 0 ? Array.from(activeExpressions)[0] : 'Neutral';
-
+    
+    // 5. Set final state for UI
     setAnalysis({
       dominantExpression,
-      activeExpressions: Array.from(activeExpressions),
-      expressions: expressionScores,
+      activeExpressions: activeExpressions,
+      expressions: newSmoothedScores,
     });
   };
 
@@ -157,6 +186,21 @@ export const useFaceExpressions = ({ videoRef, canvasRef }: UseFaceExpressionsPr
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
+      const videoAspectRatio = video.videoWidth / video.videoHeight;
+      const container = canvas.parentElement;
+      if (container) {
+        const containerAspectRatio = container.clientWidth / container.clientHeight;
+        let scale = 1;
+        if (containerAspectRatio > videoAspectRatio) {
+          scale = container.clientWidth / video.videoWidth;
+        } else {
+          scale = container.clientHeight / video.videoHeight;
+        }
+        canvas.style.transform = `scaleX(-1) scale(${scale})`;
+      } else {
+        canvas.style.transform = 'scaleX(-1)';
+      }
+
       const startTimeMs = performance.now();
       const results = faceLandmarkerRef.current.detectForVideo(video, startTimeMs);
       const canvasCtx = canvas.getContext("2d");
@@ -164,19 +208,25 @@ export const useFaceExpressions = ({ videoRef, canvasRef }: UseFaceExpressionsPr
       if (canvasCtx) {
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Flip the context horizontally to counteract the CSS mirroring
+        canvasCtx.scale(-1, 1);
+        canvasCtx.translate(-canvas.width, 0);
+
         const drawingUtils = new DrawingUtils(canvasCtx);
         if (results.faceLandmarks) {
-          for (const landmarks of results.faceLandmarks) {
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
-          }
+          // Drawing is disabled to hide the mesh
+          // for (const landmarks of results.faceLandmarks) {
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
+          //   drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
+          // }
         }
         canvasCtx.restore();
       }
@@ -203,7 +253,7 @@ export const useFaceExpressions = ({ videoRef, canvasRef }: UseFaceExpressionsPr
       }
       faceLandmarkerRef.current?.close();
     };
-  }, [videoRef, canvasRef]);
+  }, [videoRef, canvasRef, expressionThresholds]);
 
   return analysis;
 }; 

@@ -102,9 +102,9 @@ export default function LiveMeetingPage() {
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
       <div className="flex-1 flex flex-col p-4 gap-4">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden aspect-video">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full transform -scale-x-100" />
-            <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100" />
+          <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative flex items-center justify-center overflow-hidden">
+            <video ref={videoRef} autoPlay playsInline muted className="absolute w-full h-full object-cover transform -scale-x-100" />
+            <canvas ref={canvasRef} className="absolute transform -scale-x-100" />
             {!stream && isVideoOn && 
               <div className="absolute inset-0 bg-black flex items-center justify-center">
                 <p>Starting camera...</p>
@@ -156,7 +156,12 @@ export default function LiveMeetingPage() {
                   <span className="font-bold text-teal-400">{expressionAnalysis.dominantExpression}</span>
                 </p>
                 <ul className="space-y-1">
-                  {Object.entries(expressionAnalysis.expressions).map(([expression, score]) => (
+                  {Object.entries(expressionAnalysis.expressions)
+                    .sort(([a], [b]) => {
+                      const order = ['Angry', 'Curious', 'Surprised', 'Joy', 'Focused', 'Fear', 'Sad', 'Thinking', 'Confused', 'Happy', 'Disgust'];
+                      return order.indexOf(a) - order.indexOf(b);
+                    })
+                    .map(([expression, score]) => (
                     <li key={expression} className="flex items-center gap-2">
                       <span className="w-32 truncate" title={expression}>
                         {expression}
