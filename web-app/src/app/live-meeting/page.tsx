@@ -37,6 +37,89 @@ export default function LiveMeetingPage() {
   // Speaker diarization logic
   const speakerMapRef = useRef<Record<string, number>>({});
   
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const mimeTypeRef = useRef<string | null>(null);
+
+  const startRecording = () => {
+    if (stream) {
+      const mimeTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        'video/mp4',
+      ];
+      const supportedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+
+      if (!supportedMimeType) {
+        console.error('No supported mimeType found for MediaRecorder');
+        alert('Your browser does not support video recording.');
+        return;
+      }
+      
+      mimeTypeRef.current = supportedMimeType;
+      recordedChunksRef.current = [];
+      try {
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: supportedMimeType });
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunksRef.current.push(event.data);
+          }
+        };
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error('Error starting recording:', error);
+        alert('Failed to start recording.');
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.onstop = () => {
+        uploadRecording();
+        setIsRecording(false);
+      };
+    }
+  };
+  
+  const uploadRecording = () => {
+    if (recordedChunksRef.current.length > 0 && mimeTypeRef.current) {
+      const blob = new Blob(recordedChunksRef.current, { type: mimeTypeRef.current });
+      const extension = mimeTypeRef.current.split(';')[0].split('/')[1];
+      const formData = new FormData()
+      formData.append('file', blob, `recording-${Date.now()}.${extension}`)
+
+      try {
+        fetch('/api/upload-recording', {
+          method: 'POST',
+          body: formData
+        }).then(response => {
+            if (response.ok) {
+                console.log('Recording uploaded successfully')
+                alert('Recording saved successfully!')
+              } else {
+                console.error('Failed to upload recording')
+                alert('Failed to save recording.')
+              }
+        });
+      } catch (error) {
+        console.error('Error uploading recording:', error)
+        alert('Error saving recording.')
+      }
+    }
+  }
+
+  const handleToggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+  
   const handleToggleVideo = () => {
     if (stream) {
       const videoTrack = stream.getVideoTracks()[0];
@@ -55,10 +138,6 @@ export default function LiveMeetingPage() {
       }
     }
     setIsMuted(!isMuted);
-  };
-  
-  const handleToggleRecording = () => {
-    setIsRecording(!isRecording);
   };
 
   // --- HOOKS ---

@@ -15,6 +15,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { promises as fs } from 'fs'
+import path from 'path'
+import Link from 'next/link'
+import { revalidatePath } from 'next/cache'
 
 // Mock data for meetings
 const upcomingMeetings = [
@@ -38,33 +42,56 @@ const upcomingMeetings = [
   }
 ]
 
-const recentMeetings = [
-    {
-        id: 3,
-        title: "Project Phoenix Kickoff",
-        date: "Yesterday",
-        time: "4:00 PM",
-        duration: "45 min",
-        participants: ["Alex Rodriguez", "Sarah Chen", "Mike Johnson"],
-        status: "completed",
-        sentiment: "positive",
-        insights: 8
-    },
-    {
-        id: 4,
-        title: "Client Check-in: Acme Corp",
-        date: "3 days ago",
-        time: "10:30 AM",
-        duration: "30 min",
-        participants: ["Lisa Park"],
-        status: "completed",
-        sentiment: "neutral",
-        insights: 5
-    }
-]
+async function getRecentMeetings() {
+  const recordingsDir = path.join(process.cwd(), '..', 'recordings')
+  try {
+    await fs.access(recordingsDir)
+    const files = await fs.readdir(recordingsDir)
+    const webmFiles = files.filter(file => file.endsWith('.webm'))
 
-export default function MeetingsPage() {
+    const meetings = await Promise.all(
+      webmFiles.map(async file => {
+        const filePath = path.join(recordingsDir, file)
+        const stats = await fs.stat(filePath)
+        return {
+          id: file, // Use the full filename as the ID
+          title: `Recording - ${new Date(
+            stats.mtime
+          ).toLocaleString()}`,
+          date: stats.mtime.toLocaleDateString(),
+          time: stats.mtime.toLocaleTimeString(),
+          duration: 'N/A', // Placeholder
+          participants: ['You'], // Placeholder
+          status: 'completed',
+          sentiment: 'neutral', // Placeholder
+          insights: 0 // Placeholder
+        }
+      })
+    )
+    return meetings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  } catch (error) {
+    console.error('Error reading recordings directory:', error)
+    return []
+  }
+}
+
+async function deleteRecording(filename: string) {
+  'use server'
+  const recordingsDir = path.join(process.cwd(), '..', 'recordings')
+  const filePath = path.join(recordingsDir, filename)
+  try {
+    await fs.unlink(filePath)
+    console.log(`Deleted recording: ${filename}`)
+    revalidatePath('/meetings') // Revalidate the meetings page
+  } catch (error) {
+    console.error(`Error deleting recording ${filename}:`, error)
+    throw new Error('Failed to delete recording.')
+  }
+}
+
+export default async function MeetingsPage() {
   const router = useRouter()
+  const recentMeetings = await getRecentMeetings()
 
   return (
     <div className="p-6 space-y-8">
@@ -75,10 +102,12 @@ export default function MeetingsPage() {
             <h1 className="text-2xl font-bold text-white">Meetings</h1>
             <p className="text-gray-400 mt-1">Manage your upcoming and past meetings.</p>
           </div>
-          <Button onClick={() => router.push('/live-meeting')}>
-            <Video className="w-4 h-4 mr-2" />
-            Start Live Meeting
-          </Button>
+          <Link href="/live-meeting">
+            <Button>
+              <Video className="w-4 h-4 mr-2" />
+              Start Live Meeting
+            </Button>
+          </Link>
         </div>
 
         {/* Search and Filter */}
@@ -131,41 +160,33 @@ export default function MeetingsPage() {
       <Card>
         <CardContent className="pt-6">
           <h2 className="text-xl font-semibold mb-4 text-white">Recent Meetings</h2>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {recentMeetings.map(meeting => (
-              <Card key={meeting.id} className="bg-gray-800 border-gray-700">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-white">{meeting.title}</h3>
-                      <p className="text-sm text-gray-400">{meeting.date} at {meeting.time} ({meeting.duration})</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant={meeting.sentiment === 'positive' ? 'default' : 'secondary'}>
-                            {meeting.sentiment}
-                        </Badge>
-                        <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                        </Button>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-400">{meeting.participants.join(", ")}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-sm">
-                            <TrendingUp className="w-4 h-4 text-green-500" />
-                            <span>{meeting.insights} Insights</span>
-                        </div>
-                        <Button onClick={() => router.push(`/meeting/${meeting.id}`)}>
-                            View Analysis <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+               <Card key={meeting.id} className="overflow-hidden">
+               <CardContent className="p-4">
+                 <video controls className="mb-4 h-40 w-full rounded-lg object-cover">
+                   <source src={`/recordings/${meeting.id}`} type="video/webm" />
+                   Your browser does not support the video tag.
+                 </video>
+                 <h3 className="mb-2 font-semibold">{meeting.title}</h3>
+                 <div className="mb-4 text-sm text-gray-400">
+                   <p>{meeting.date} at {meeting.time}</p>
+                 </div>
+                 <div className="flex justify-between">
+                   <Link href={`/meeting/${meeting.id}`}>
+                      <Button>
+                          View Analysis <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                   </Link>
+                   <form action={async () => {
+                       'use server'
+                       await deleteRecording(meeting.id)
+                   }}>
+                       <Button variant="destructive" size="sm" type="submit">Delete</Button>
+                   </form>
+                 </div>
+               </CardContent>
+             </Card>
             ))}
           </div>
         </CardContent>
