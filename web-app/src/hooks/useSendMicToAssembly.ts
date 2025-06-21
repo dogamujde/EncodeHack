@@ -1,22 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseSendMicToAssemblyProps {
+  stream: MediaStream | null;
   isRecording: boolean;
   onTranscript: (text: string) => void;
   onSuggestion: (text: string) => void;
 }
 
-export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }: UseSendMicToAssemblyProps) => {
+export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSuggestion }: UseSendMicToAssemblyProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fullTranscriptRef = useRef('');
   const socketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const tokenRetryCountRef = useRef(0);
   const isConnectingRef = useRef(false);
   const maxRetries = 3;
+  const tokenRetryCountRef = useRef(0);
 
   const stopMediaAndSocket = useCallback(() => {
     console.log('🛑 Stopping media and socket...');
@@ -24,17 +24,12 @@ export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    
+        
     if (socketRef.current) {
       socketRef.current.close();
     }
 
     mediaRecorderRef.current = null;
-    streamRef.current = null;
     socketRef.current = null;
     isConnectingRef.current = false;
     tokenRetryCountRef.current = 0;
@@ -42,8 +37,8 @@ export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }
   }, []);
 
   const startTranscription = useCallback(async () => {
-    if (!isRecording || isConnectingRef.current || (socketRef.current && socketRef.current.readyState === WebSocket.OPEN)) {
-      console.log('🚫 Transcription start condition not met.', { isRecording, isConnecting: isConnectingRef.current, socketState: socketRef.current?.readyState });
+    if (!isRecording || !stream || isConnectingRef.current || (socketRef.current && socketRef.current.readyState === WebSocket.OPEN)) {
+      console.log('🚫 Transcription start condition not met.', { isRecording, stream: !!stream, isConnecting: isConnectingRef.current, socketState: socketRef.current?.readyState });
       return;
     }
 
@@ -73,9 +68,6 @@ export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }
         tokenRetryCountRef.current = 0; // Reset on successful connection
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
-
             const supportedTypes = ['audio/webm','audio/mp4', 'audio/ogg','audio/wav'];
             const mimeType = supportedTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
             
@@ -88,8 +80,8 @@ export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }
             };
             mediaRecorderRef.current.start(1000);
         } catch(err) {
-            console.error('❌ Error getting audio stream:', err);
-            setError('Failed to get microphone access');
+            console.error('❌ Error starting media recorder:', err);
+            setError('Failed to start media recorder');
             stopMediaAndSocket();
         }
       };
@@ -114,7 +106,7 @@ export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }
         console.log('🔌 WebSocket closed:', event.code, event.reason);
         setIsConnected(false);
         isConnectingRef.current = false;
-        if (isRecording && !event.wasClean) {
+        if (isRecording && !event.wasClean && stream) {
           console.log('🔄 Reconnecting...');
           setTimeout(startTranscription, 2000);
         }
@@ -124,20 +116,21 @@ export const useSendMicToAssembly = ({ isRecording, onTranscript, onSuggestion }
       setError(`Initialization failed: ${err}`);
       isConnectingRef.current = false;
     }
-  }, [isRecording, onTranscript, stopMediaAndSocket]);
+  }, [isRecording, stream, onTranscript, stopMediaAndSocket]);
   
   useEffect(() => {
-    if (isRecording) {
+    if (isRecording && stream) {
       fullTranscriptRef.current = '';
       startTranscription();
     } else {
       stopMediaAndSocket();
     }
 
-    return () => {
-      stopMediaAndSocket();
-    };
-  }, [isRecording, startTranscription, stopMediaAndSocket]);
+    // This hook should not be responsible for stopping the stream tracks
+    // return () => {
+    //   stopMediaAndSocket();
+    // };
+  }, [isRecording, stream, startTranscription, stopMediaAndSocket]);
 
   return { isConnected, error };
 }; 

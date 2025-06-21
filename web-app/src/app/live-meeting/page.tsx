@@ -34,8 +34,67 @@ export default function LiveMeetingPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Unified media stream setup
+  const setupMediaStream = async (video: boolean, audio: boolean) => {
+    try {
+      // Stop any existing stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+
+      if (!video && !audio) {
+        streamRef.current = null;
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+        setIsVideoOn(false);
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: video,
+        audio: audio
+      });
+
+      streamRef.current = stream;
+
+      if (video && videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsVideoOn(true);
+      } else if (!video && videoRef.current) {
+        videoRef.current.srcObject = null;
+        setIsVideoOn(false);
+      }
+      
+    } catch (error) {
+      console.error('Error accessing media devices:', error);
+    }
+  };
+
+  const toggleVideo = () => {
+    const newVideoState = !isVideoOn;
+    setIsVideoOn(newVideoState);
+    setupMediaStream(newVideoState, isRecording);
+  };
+  
+  const toggleRecording = () => {
+    const newRecordingState = !isRecording;
+    setIsRecording(newRecordingState);
+    if (!newRecordingState && !isVideoOn) {
+      // If both are off, stop stream completely
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    } else {
+      setupMediaStream(isVideoOn, newRecordingState);
+    }
+  };
+
   // Initialize transcription with coaching callbacks
   const { isConnected: transcriptConnected, error: transcriptError } = useSendMicToAssembly({
+    stream: streamRef.current,
+    isRecording,
     onSuggestion: (suggestion: string) => {
       setLiveFeedback(suggestion);
       addFeedbackItem(suggestion, 'suggestion');
@@ -54,38 +113,6 @@ export default function LiveMeetingPage() {
       setCurrentTranscript(transcript);
     }
   });
-
-  // Camera setup
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false // Audio handled by transcription hook
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      
-      streamRef.current = stream;
-      setIsVideoOn(true);
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    
-    setIsVideoOn(false);
-  };
 
   // Feedback management
   const addFeedbackItem = (message: string, type: FeedbackItem['type']) => {
@@ -114,7 +141,9 @@ export default function LiveMeetingPage() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopCamera();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
   }, []);
 
@@ -177,7 +206,7 @@ export default function LiveMeetingPage() {
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-4 bg-black bg-opacity-50 rounded-lg p-3">
                       <Button
-                        onClick={isVideoOn ? stopCamera : startCamera}
+                        onClick={toggleVideo}
                         variant={isVideoOn ? "default" : "secondary"}
                         size="sm"
                         className="text-white"
@@ -186,7 +215,7 @@ export default function LiveMeetingPage() {
                       </Button>
                       
                       <Button
-                        onClick={() => setIsRecording(!isRecording)}
+                        onClick={toggleRecording}
                         variant={isRecording ? "destructive" : "secondary"}
                         size="sm"
                         className="text-white"
