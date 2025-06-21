@@ -2,24 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Mic, 
-  MicOff, 
-  Volume2,
+import {
+  Mic,
+  MicOff,
   Camera,
   CameraOff,
-  Users,
-  Clock,
   Play,
   Square,
-  Headphones
+  Video,
+  VideoOff
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useSendMicToAssembly } from '@/hooks/useSendMicToAssembly'
+import { useFaceExpressions } from '@/hooks/useFaceExpressions'
 
-type AudioDevice = 'computer' | 'phone'
 interface Transcript {
   text: string;
   speaker?: string;
@@ -27,20 +23,18 @@ interface Transcript {
 
 export default function LiveMeetingPage() {
   const router = useRouter()
-  const [isMuted, setIsMuted] = useState(false)
-  const [isVideoOn, setIsVideoOn] = useState(true)
-  const [isRecording, setIsRecording] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<AudioDevice>('computer')
-  const [volume, setVolume] = useState(75)
+  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [finalTranscripts, setFinalTranscripts] = useState<Transcript[]>([])
-
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  const [finalTranscripts, setFinalTranscripts] = useState<Transcript[]>([]);
+  
+  // Speaker diarization logic
   const speakerMapRef = useRef<Record<string, number>>({});
   const nextSpeakerIdRef = useRef(1);
-
   const getSpeakerDisplayName = (speakerLabel?: string): string => {
     if (!speakerLabel) return 'SPEAKER';
     if (!speakerMapRef.current[speakerLabel]) {
@@ -49,298 +43,131 @@ export default function LiveMeetingPage() {
     return `SPEAKER ${speakerMapRef.current[speakerLabel]}`;
   };
 
+  // --- HOOKS ---
+  const expressionFeedback = useFaceExpressions({ stream });
   useSendMicToAssembly({
-    stream: stream,
+    stream,
     isRecording,
     onTranscript: (transcript) => {
-      setFinalTranscripts(prev => [...prev, transcript]);
+      const speaker = getSpeakerDisplayName(transcript.speaker);
+      setFinalTranscripts(prev => [...prev, { ...transcript, speaker }]);
     },
   });
 
-  // Initialize camera
+  // Timer logic
+  const [elapsedTime, setElapsedTime] = useState(0);
   useEffect(() => {
-    // Stop any existing stream when the camera is turned off
-    if (!isVideoOn) {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-        setStream(null)
-        setIsConnected(false)
-      }
-      return
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      setElapsedTime(0);
     }
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
-    let isCancelled = false
+  const formattedTime = new Date(elapsedTime * 1000).toISOString().substr(14, 5);
 
-    const startStream = async () => {
+  // --- MEDIA STREAM MANAGEMENT ---
+  useEffect(() => {
+    let isCancelled = false;
+    async function getMedia() {
+      if (isCancelled) return;
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-          audio: true,
-        })
+          video: { width: 1280, height: 720 },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
         if (!isCancelled) {
-          setStream(mediaStream)
-          setIsConnected(true)
+          setStream(mediaStream);
+          if (videoRef.current) videoRef.current.srcObject = mediaStream;
         }
-      } catch (error) {
-        console.error('Error accessing camera:', error)
-        setIsConnected(false)
-        if (!isCancelled) {
-          setIsVideoOn(false) // Turn off toggle if permission is denied
-        }
+      } catch (err) {
+        console.error('Error accessing media devices.', err);
       }
     }
 
-    startStream()
-
+    if (isVideoOn) {
+      getMedia();
+    } else {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+    }
     return () => {
-      isCancelled = true
-      // The main stream cleanup is now handled when isVideoOn becomes false
-    }
-  }, [isVideoOn])
+      isCancelled = true;
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVideoOn]);
 
-  // Effect to attach stream to video element
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream
-    }
-  }, [stream])
-
-  const toggleCamera = () => {
-    setIsVideoOn(!isVideoOn)
-  }
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted)
-    if (stream) {
-      stream.getAudioTracks().forEach(track => {
-        track.enabled = isMuted
-      })
-    }
-  }
-
-  const toggleRecording = () => {
-    setIsRecording(!isRecording)
-  }
-
-  const handleEndMeeting = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-    }
-    router.push('/dashboard')
-  }
+  // --- UI HANDLERS ---
+  const handleToggleRecording = () => setIsRecording(prev => !prev);
+  const handleToggleVideo = () => setIsVideoOn(prev => !prev);
+  const handleToggleMute = () => {
+    setIsMuted(prev => {
+      const nextMuted = !prev;
+      if (stream) stream.getAudioTracks().forEach(track => track.enabled = !nextMuted);
+      return nextMuted;
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-white">Live Meeting</h1>
-            <p className="text-gray-400 mt-1">Real-time transcription and AI insights</p>
+    <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
+      <div className="flex-1 flex flex-col p-4 gap-4">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden">
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+            {!stream && isVideoOn && 
+              <div className="absolute inset-0 bg-black flex items-center justify-center">
+                  <p>Requesting camera access...</p>
+              </div>
+            }
+            {!isVideoOn && (
+              <div className="absolute inset-0 bg-black flex items-center justify-center">
+                <CameraOff className="h-16 w-16 text-gray-500" />
+              </div>
+            )}
+            {expressionFeedback && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-lg transition-opacity duration-300">
+                {expressionFeedback}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            <Badge variant={isConnected ? "default" : "secondary"} className="px-3 py-1">
-              {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
-            </Badge>
-            <Badge variant={isRecording ? "default" : "secondary"} className="px-3 py-1">
-              {isRecording ? "🔴 Recording" : "⏸️ Stopped"}
-            </Badge>
-            <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')}>
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex h-[calc(100vh-120px)]">
-        {/* Left Panel - Video and Controls */}
-        <div className="w-1/2 p-6 space-y-6">
-          {/* Video Preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Video Preview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
-                {isVideoOn ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover -scale-x-100"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-700">
-                    <CameraOff className="w-16 h-16 text-gray-400" />
-                  </div>
-                )}
-                
-                {/* Video Controls */}
-                <div className="absolute bottom-4 left-4 flex gap-3">
-                  <Button
-                    onClick={toggleCamera}
-                    variant={isVideoOn ? "secondary" : "destructive"}
-                    size="sm"
-                  >
-                    {isVideoOn ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
-                  </Button>
-                  
-                  <Button
-                    onClick={toggleMute}
-                    variant={!isMuted ? "secondary" : "destructive"}
-                    size="sm"
-                  >
-                    {!isMuted ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Audio & Recording Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Headphones className="h-5 w-5" />
-                Audio & Recording
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Audio Device Selection */}
-              <div 
-                className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                  selectedAudioDevice === 'computer' 
-                    ? 'border-blue-500 bg-blue-500/10' 
-                    : 'border-gray-600 hover:border-gray-500'
-                }`}
-                onClick={() => setSelectedAudioDevice('computer')}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Volume2 className="w-4 h-4 text-blue-400" />
-                    <span className="font-medium text-sm">Computer Audio</span>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    selectedAudioDevice === 'computer' ? 'border-blue-500' : 'border-gray-400'
-                  }`}>
-                    {selectedAudioDevice === 'computer' && (
-                      <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Volume & Recording Controls */}
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex-1 space-y-2">
-                   {/* Volume Control */}
-                  <div className="flex items-center gap-3">
-                    <Volume2 className="w-4 h-4 text-gray-400" />
-                    <div className="flex-1">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={volume}
-                        onChange={(e) => setVolume(Number(e.target.value))}
-                        className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                    <span className="text-xs text-gray-400 w-8">{volume}%</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={toggleRecording}
-                    variant={isRecording ? "destructive" : "default"}
-                    size="sm"
-                  >
-                    {isRecording ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleEndMeeting}>
-                    End
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Panel - Live Transcripts and Insights */}
-        <div className="w-1/2 p-6 space-y-6">
-          {/* Live Transcripts */}
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Live Transcripts
-                </span>
-                <Button variant="outline" size="sm" onClick={() => {
-                  setFinalTranscripts([])
-                }}>
-                  Clear
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-80 overflow-y-auto space-y-4">
-              {finalTranscripts.map((transcript, index) => (
-                <div key={index}>
-                  <p className="text-white">
-                    <span className="font-semibold text-blue-400">{getSpeakerDisplayName(transcript.speaker)}:</span>
-                    {' '}
-                    {transcript.text}
-                  </p>
+          <div className="w-full h-full bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
+            <h2 className="text-xl font-bold mb-4">Live Transcript</h2>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {finalTranscripts.map((item, index) => (
+                <div key={index} className="flex gap-3">
+                  <div className="font-bold w-24 flex-shrink-0 text-gray-400">{item.speaker}:</div>
+                  <div className="text-gray-200">{item.text}</div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-
-          {/* AI Insights */}
-          <Card>
-            <CardHeader>
-              <CardTitle>🤖 Real-time AI Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                  <div className="text-sm font-semibold text-blue-400">Speaking Pace</div>
-                  <div className="text-xl font-bold text-blue-300">
-                    {isRecording ? "165 WPM" : "0 WPM"}
-                  </div>
-                  <div className="text-xs text-blue-400/70 mt-1">Words per minute</div>
-                </div>
-                <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                  <div className="text-sm font-semibold text-green-400">Sentiment</div>
-                  <div className="text-xl font-bold text-green-300">
-                    {isRecording ? "Positive" : "Neutral"}
-                  </div>
-                  <div className="text-xs text-green-400/70 mt-1">Overall tone</div>
-                </div>
-                <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                  <div className="text-sm font-semibold text-purple-400">Questions</div>
-                  <div className="text-xl font-bold text-purple-300">
-                    {isRecording ? "12%" : "0%"}
-                  </div>
-                  <div className="text-xs text-purple-400/70 mt-1">Question ratio</div>
-                </div>
-                <div className="text-center p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                  <div className="text-sm font-semibold text-orange-400">Interruptions</div>
-                  <div className="text-xl font-bold text-orange-300">
-                    {isRecording ? "2" : "0"}
-                  </div>
-                  <div className="text-xs text-orange-400/70 mt-1">Total count</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </div>
+        <div className="h-24 bg-[#1a1a1a] rounded-lg flex items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <span className="text-lg font-semibold">{formattedTime}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button onClick={handleToggleVideo} variant="outline" size="lg" className="bg-transparent border-gray-600 hover:bg-gray-700">
+              {isVideoOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
+            </Button>
+            <Button onClick={handleToggleMute} variant="outline" size="lg" className="bg-transparent border-gray-600 hover:bg-gray-700">
+              {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+            </Button>
+            <Button onClick={handleToggleRecording} variant={isRecording ? 'destructive' : 'default'} size="lg">
+              {isRecording ? <Square className="h-6 w-6 mr-2" /> : <Play className="h-6 w-6 mr-2" />}
+              {isRecording ? 'Stop' : 'Record'}
+            </Button>
+          </div>
+           <div className="w-48"></div> {/* Spacer */}
         </div>
       </div>
     </div>
-  )
+  );
 } 
