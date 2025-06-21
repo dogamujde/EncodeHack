@@ -70,27 +70,31 @@ export default function LandingPage() {
             {/* Main Headline */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                AI that thinks
+                See Your Meetings
               </span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                ahead of you
+                Like Never Before
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              Transform your workflow with intelligent automation that learns from your habits 
-              and anticipates your needs.
+              Get real-time insights, feedback, and summaries — powered by AI that listens and learns as you speak.
             </p>
 
-            {/* Feature Pills */}
+            {/* Feature Pills - Meeting Insights emphasized first */}
             <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+              {/* Emphasized Meeting Insights */}
+              <div className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-2 border-blue-500/30 text-base font-semibold text-blue-300 shadow-lg shadow-blue-500/10">
+                🎯 Meeting Insights
+              </div>
+              
+              {/* Other features */}
               {[
-                "Smart Scheduling",
-                "Task Automation", 
-                "Meeting Insights",
-                "Focus Mode"
+                "📅 Calendar-Aware Planning",
+                "✅ Auto-Assign Action Items", 
+                "🔕 Distraction-Free Meetings"
               ].map((feature) => (
                 <div
                   key={feature}
@@ -109,7 +113,7 @@ export default function LandingPage() {
                 onClick={() => openAuth("signup")}
                 className="w-full sm:w-auto min-w-[200px] shadow-2xl shadow-white/10"
               >
-                Start Free Trial
+                Try AI Meeting Insights Free
               </Button>
               <Button
                 variant="outline"
