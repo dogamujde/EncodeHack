@@ -218,24 +218,22 @@ export const useFaceExpressions = ({
         
         let renderedWidth, renderedHeight;
         if (videoAspectRatio > containerAspectRatio) {
-            renderedWidth = container.clientWidth;
-            renderedHeight = renderedWidth / videoAspectRatio;
-        } else {
             renderedHeight = container.clientHeight;
             renderedWidth = renderedHeight * videoAspectRatio;
+        } else {
+            renderedWidth = container.clientWidth;
+            renderedHeight = renderedWidth / videoAspectRatio;
         }
 
         const offsetX = (container.clientWidth - renderedWidth) / 2;
-        const offsetY = (container.clientHeight - renderedHeight) / 2;
+        const offsetY = (container.clientHeight - renderedHeight) / 2 - 5;
 
         canvas.style.width = `${renderedWidth}px`;
         canvas.style.height = `${renderedHeight}px`;
         canvas.style.left = `${offsetX}px`;
         canvas.style.top = `${offsetY}px`;
-        canvas.style.transform = 'scaleX(-1)';
         canvas.classList.add('pointer-events-none');
       } else {
-        canvas.style.transform = 'scaleX(-1)';
         canvas.classList.add('pointer-events-none');
       }
 
@@ -249,17 +247,34 @@ export const useFaceExpressions = ({
       if (canvasCtx) {
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Flip the canvas context horizontally before drawing
+        canvasCtx.translate(canvas.width, 0);
+        canvasCtx.scale(-1, 1);
 
         const drawingUtils = new DrawingUtils(canvasCtx);
         if (showMesh && results.faceLandmarks) {
           for (const landmarks of results.faceLandmarks) {
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
+            const videoHeight = videoRef.current?.videoHeight;
+            // The offset is normalized, so we divide by the video height
+            const yOffset = videoHeight ? (15 / videoHeight) : 0;
+
+            // Create a new landmark set where ALL points are shifted up
+            const shiftedLandmarks = landmarks.map(p => ({
+              ...p,
+              y: p.y - yOffset
+            }));
+            
+            // Draw the shifted gray parts
+            drawingUtils.drawConnectors(shiftedLandmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
+            drawingUtils.drawConnectors(shiftedLandmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
+            drawingUtils.drawConnectors(shiftedLandmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
+
+            // Draw the original, non-shifted colored eye parts over the top
             drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
             drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
             drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
             drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
             drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
             drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
           }
