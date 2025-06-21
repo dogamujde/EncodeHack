@@ -1,116 +1,87 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import DailyIframe, { DailyCall as DailyCallType } from '@daily-co/daily-js';
-import { useAssemblyAITranscriber } from '@/hooks/useAssemblyAITranscriber';
-import { useRealtimeFeedback } from '@/hooks/useRealtimeFeedback';
-import { Button } from './ui/button';
-
-const ROOM_URL = "https://meetingbot.daily.co/coaching-room";
+import React, { useEffect, useRef, useCallback } from 'react';
+import DailyIframe from '@daily-co/daily-js';
 
 interface DailyCallProps {
-  onTranscript: (transcript: string) => void;
-  onFeedback: (feedback: string[]) => void;
+  onTranscript?: (transcript: string) => void;
+  onFeedback?: (feedback: string[]) => void;
 }
 
-export function DailyCall({ onTranscript, onFeedback }: DailyCallProps) {
-  const callWrapperRef = useRef<HTMLDivElement>(null);
-  const callFrameRef = useRef<DailyCallType | null>(null);
-  
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const { transcript, setup, start, stop } = useAssemblyAITranscriber();
-  const { feedback } = useRealtimeFeedback({ transcript });
+export const DailyCall: React.FC<DailyCallProps> = ({ onTranscript, onFeedback }) => {
+  const callContainerRef = useRef<HTMLDivElement>(null);
+  const callFrameRef = useRef<any>(null);
 
-  // Pass transcript and feedback up to parent
-  useEffect(() => { onTranscript(transcript); }, [transcript, onTranscript]);
-  useEffect(() => { onFeedback(feedback); }, [feedback, onFeedback]);
+  const handleEvent = useCallback((event: any) => {
+    // This is a placeholder for event handling logic
+    console.log('Daily event:', event);
+    switch (event.action) {
+      case 'joined-meeting':
+        console.log('Joined the meeting');
+        break;
+      case 'participant-joined':
+        console.log('Participant joined:', event.participant);
+        break;
+      case 'participant-left':
+        console.log('Participant left:', event.participant);
+        break;
+      case 'transcript-message':
+        onTranscript?.(event.message);
+        break;
+      case 'app-message':
+        if (event.fromId === 'coaching-ai' && onFeedback) {
+          onFeedback(event.data.feedback);
+        }
+        break;
+      default:
+        break;
+    }
+  }, [onTranscript, onFeedback]);
 
-  // Audio processing logic
-  const handleAudio = useCallback((data: { audio_data: string }) => {
-    start(data.audio_data);
-  }, [start]);
-
-  // Daily iframe and event setup
   useEffect(() => {
-    if (!callWrapperRef.current) return;
+    if (!callContainerRef.current) {
+      console.log("Call container ref not available yet.");
+      return;
+    }
 
-    const frame = DailyIframe.createFrame(callWrapperRef.current, {
+    // Ensure the container is empty before creating a new frame
+    if (callContainerRef.current.childElementCount > 0) {
+        console.log("Call frame already exists or container is not empty.");
+        return;
+    }
+
+    const callFrame = DailyIframe.createFrame(callContainerRef.current, {
+      showLeaveButton: true,
       iframeStyle: {
         position: 'absolute',
         width: '100%',
         height: '100%',
-        top: '0',
-        left: '0',
         border: '0',
       },
     });
-    callFrameRef.current = frame;
-    frame.join({ url: ROOM_URL });
 
-    let audioContext: AudioContext | null = null;
-    let workletNode: AudioWorkletNode | null = null;
+    callFrameRef.current = callFrame;
 
-    const handleTrackStarted = async (event: any) => {
-      if (isTranscribing && event.participant?.local && event.track.kind === 'audio') {
-        audioContext = new AudioContext();
-        const stream = new MediaStream([event.track.persistentTrack]);
-        await audioContext.audioWorklet.addModule('/audio-worklets/audio-processor.js');
-        workletNode = new AudioWorkletNode(audioContext, 'audio-processor');
-        workletNode.port.onmessage = (e) => handleAudio(e.data);
-        const source = audioContext.createMediaStreamSource(stream);
-        source.connect(workletNode).connect(audioContext.destination);
-      }
-    };
+    const roomURL = 'https://meetingbot.daily.co/coaching-room';
+    
+    // As per the security note, the API key is not used on the client-side.
+    // For private rooms, a meeting token should be fetched from a secure backend.
+    // This example joins a public room.
+    callFrame.join({ url: roomURL })
+      .catch(err => console.error("Failed to join Daily room:", err));
 
-    const startAudioProcessing = () => {
-      if (callFrameRef.current) {
-        const localParticipant = callFrameRef.current.participants().local;
-        if (localParticipant.tracks.audio) {
-          handleTrackStarted({ participant: localParticipant, track: localParticipant.tracks.audio });
-        }
-      }
-      frame.on('track-started', handleTrackStarted);
-    };
-
-    const stopAudioProcessing = () => {
-      frame.off('track-started', handleTrackStarted);
-      workletNode?.port.close();
-      workletNode = null;
-      audioContext?.close();
-      audioContext = null;
-    };
-
-    if (isTranscribing) {
-      startAudioProcessing();
-    } else {
-      stopAudioProcessing();
-    }
+    // --- Event Listeners ---
+    callFrame.on('joined-meeting', handleEvent);
+    callFrame.on('participant-joined', handleEvent);
+    callFrame.on('participant-left', handleEvent);
+    callFrame.on('error', (e) => console.error('Daily call error:', e));
 
     return () => {
-      stopAudioProcessing();
-      callFrameRef.current?.destroy();
+      console.log("Cleaning up Daily call frame.");
+      callFrame.destroy();
       callFrameRef.current = null;
     };
-  }, [isTranscribing, handleAudio]);
+  }, [handleEvent]);
 
-  const toggleTranscription = () => {
-    if (isTranscribing) {
-      stop();
-      setIsTranscribing(false);
-    } else {
-      setup().then(() => {
-        setIsTranscribing(true);
-      });
-    }
-  };
-
-  return (
-    <div ref={callWrapperRef} className="w-full h-full">
-      <div className="absolute bottom-4 right-4 z-10">
-        <Button onClick={toggleTranscription}>
-          {isTranscribing ? 'Stop Transcription' : 'Start Transcription'}
-        </Button>
-      </div>
-    </div>
-  );
-} 
+  return <div ref={callContainerRef} className="w-full h-full relative" />;
+}; 
