@@ -5,9 +5,10 @@ interface UseSendMicToAssemblyProps {
   isRecording: boolean;
   onTranscript: (text: string) => void;
   onSuggestion: (text: string) => void;
+  onMetrics?: (metrics: { wpm: number; confidence: number; avgConfidence: number; total: number; finals: number; sessionSec: number }) => void;
 }
 
-export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSuggestion }: UseSendMicToAssemblyProps) => {
+export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSuggestion, onMetrics }: UseSendMicToAssemblyProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,6 +21,16 @@ export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSugg
   const maxRetries = 3;
   const retryCountRef = useRef(0);
   const isInitializedRef = useRef(false);
+
+  // Rolling metrics for smarter feedback
+  const metricsRef = useRef({
+    confidenceSum: 0,
+    confidenceCount: 0,
+    lastSuggestion: '',
+    total: 0,
+    finals: 0,
+    startTime: Date.now()
+  });
 
   const cleanup = useCallback(() => {
     console.log('🧹 Cleaning up resources...');
@@ -186,7 +197,61 @@ export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSugg
           } else if (data.message_type === 'FinalTranscript' && data.text) {
             console.log('✅ Final transcript:', data.text);
             fullTranscriptRef.current += ' ' + data.text;
-            onTranscript(fullTranscriptRef.current.trim());
+            const full = fullTranscriptRef.current.trim();
+            onTranscript(full);
+
+            // ---------------- Local heuristic feedback ----------------
+            try {
+              const wordsInSegment = data.text.split(/\s+/).filter(Boolean).length;
+              const segmentDurationSec = (data.audio_end - data.audio_start) / 1000;
+              const wpm = segmentDurationSec > 0 ? (wordsInSegment / segmentDurationSec) * 60 : 0;
+
+              const lower = full.toLowerCase();
+              const fillerMatches = lower.match(/\b(um|uh|like|you know)\b/g);
+              const fillerCount = fillerMatches ? fillerMatches.length : 0;
+
+              // Update rolling confidence
+              metricsRef.current.confidenceSum += (data.confidence || 0);
+              metricsRef.current.confidenceCount += 1;
+              metricsRef.current.total += 1;
+              if (data.message_type === 'FinalTranscript') {
+                metricsRef.current.finals += 1;
+              }
+
+              const avgConfidence = metricsRef.current.confidenceCount > 0 ?
+                metricsRef.current.confidenceSum / metricsRef.current.confidenceCount : 1;
+
+              let suggestion = '';
+              if (data.confidence && data.confidence < 0.75) {
+                suggestion = 'Try speaking a bit more clearly to improve accuracy.';
+              } else if (wpm > 180) {
+                suggestion = 'You are speaking quite fast – slow down a little.';
+              } else if (wpm < 90 && wordsInSegment > 5) {
+                suggestion = 'You can speed up a bit to maintain engagement.';
+              } else if (fillerCount >= 3) {
+                suggestion = 'Consider reducing filler words to sound more confident.';
+              } else if (avgConfidence < 0.85) {
+                suggestion = `Average ASR confidence is ${(avgConfidence*100).toFixed(0)}%. Speak a bit clearer.`;
+              }
+
+              if (suggestion && suggestion !== metricsRef.current.lastSuggestion) {
+                metricsRef.current.lastSuggestion = suggestion;
+                onSuggestion(suggestion);
+              }
+
+              // emit metrics to UI if callback provided
+              const now = Date.now();
+              onMetrics?.({
+                wpm,
+                confidence: data.confidence ?? 1,
+                avgConfidence,
+                total: metricsRef.current.total,
+                finals: metricsRef.current.finals,
+                sessionSec: Math.floor((now - metricsRef.current.startTime)/1000)
+              });
+            } catch (e) {
+              console.warn('heuristic feedback error', e);
+            }
           } else if (data.message_type === 'SessionBegins') {
             console.log('🎉 AssemblyAI session started');
           } else {
@@ -233,7 +298,7 @@ export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSugg
         }, 3000);
       }
     }
-  }, [stream, onTranscript]);
+  }, [stream, onTranscript, onSuggestion, onMetrics]);
 
   // Initialize once when recording starts
   useEffect(() => {
