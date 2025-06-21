@@ -1,56 +1,30 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import DailyIframe from '@daily-co/daily-js';
 
 interface DailyCallProps {
-  onTranscript?: (transcript: string) => void;
-  onFeedback?: (feedback: string[]) => void;
+  onLocalVideoTrack?: (track: MediaStreamTrack) => void;
 }
 
-export const DailyCall: React.FC<DailyCallProps> = ({ onTranscript, onFeedback }) => {
-  const callContainerRef = useRef<HTMLDivElement>(null);
-  const callFrameRef = useRef<any>(null);
+export const DailyCall: React.FC<DailyCallProps> = ({ onLocalVideoTrack }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const callObjectRef = useRef<any>(null);
 
-  const handleEvent = useCallback((event: any) => {
-    // This is a placeholder for event handling logic
-    console.log('Daily event:', event);
-    switch (event.action) {
-      case 'joined-meeting':
-        console.log('Joined the meeting');
-        break;
-      case 'participant-joined':
-        console.log('Participant joined:', event.participant);
-        break;
-      case 'participant-left':
-        console.log('Participant left:', event.participant);
-        break;
-      case 'transcript-message':
-        onTranscript?.(event.message);
-        break;
-      case 'app-message':
-        if (event.fromId === 'coaching-ai' && onFeedback) {
-          onFeedback(event.data.feedback);
-        }
-        break;
-      default:
-        break;
-    }
-  }, [onTranscript, onFeedback]);
+  // Use a ref to store the latest callback without re-triggering the effect
+  const onLocalVideoTrackRef = useRef(onLocalVideoTrack);
+  useEffect(() => {
+    onLocalVideoTrackRef.current = onLocalVideoTrack;
+  }, [onLocalVideoTrack]);
 
   useEffect(() => {
-    if (!callContainerRef.current) {
-      console.log("Call container ref not available yet.");
+    const container = containerRef.current;
+    if (!container) {
       return;
     }
 
-    // Ensure the container is empty before creating a new frame
-    if (callContainerRef.current.childElementCount > 0) {
-        console.log("Call frame already exists or container is not empty.");
-        return;
-    }
-
-    const callFrame = DailyIframe.createFrame(callContainerRef.current, {
+    // This effect runs only once on mount
+    const callObject = DailyIframe.createFrame(container, {
       showLeaveButton: true,
       iframeStyle: {
         position: 'absolute',
@@ -59,29 +33,40 @@ export const DailyCall: React.FC<DailyCallProps> = ({ onTranscript, onFeedback }
         border: '0',
       },
     });
+    callObjectRef.current = callObject;
 
-    callFrameRef.current = callFrame;
+    const handleEvent = (event: any) => {
+      switch (event.action) {
+        case 'track-started':
+          if (event.participant?.local && event.track.kind === 'video') {
+            onLocalVideoTrackRef.current?.(event.track.persistentTrack);
+          }
+          break;
+        case 'error':
+          console.error('Daily call error:', event);
+          break;
+        default:
+          break;
+      }
+    };
+
+    callObject
+      .on('joined-meeting', handleEvent)
+      .on('participant-joined', handleEvent)
+      .on('participant-left', handleEvent)
+      .on('track-started', handleEvent)
+      .on('error', handleEvent);
 
     const roomURL = 'https://meetingbot.daily.co/coaching-room';
-    
-    // As per the security note, the API key is not used on the client-side.
-    // For private rooms, a meeting token should be fetched from a secure backend.
-    // This example joins a public room.
-    callFrame.join({ url: roomURL })
+    callObject.join({ url: roomURL })
       .catch(err => console.error("Failed to join Daily room:", err));
 
-    // --- Event Listeners ---
-    callFrame.on('joined-meeting', handleEvent);
-    callFrame.on('participant-joined', handleEvent);
-    callFrame.on('participant-left', handleEvent);
-    callFrame.on('error', (e) => console.error('Daily call error:', e));
-
     return () => {
-      console.log("Cleaning up Daily call frame.");
-      callFrame.destroy();
-      callFrameRef.current = null;
+      // This cleanup runs only once on unmount
+      callObjectRef.current?.destroy();
+      callObjectRef.current = null;
     };
-  }, [handleEvent]);
+  }, []); // Empty dependency array ensures this runs only once
 
-  return <div ref={callContainerRef} className="w-full h-full relative" />;
-}; 
+  return <div ref={containerRef} className="w-full h-full relative" />;
+};

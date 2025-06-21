@@ -78,6 +78,7 @@ export const useFaceExpressions = ({
   const [analysis, setAnalysis] = useState<ExpressionAnalysis>(initialAnalysisState);
   const animationFrameId = useRef<number | null>(null);
   const lastVideoTimeRef = useRef(-1);
+  const isDetecting = useRef(false);
   const smoothedScoresRef = useRef<{ [key: string]: number }>({ ...initialAnalysisState.expressions });
 
   const analyzeBlendshapes = (blendshapes: Classifications[]) => {
@@ -165,10 +166,11 @@ export const useFaceExpressions = ({
       faceLandmarkerRef.current = faceLandmarker;
     };
 
-    const predictWebcam = () => {
+    const predictWebcam = async () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      if (!video || !canvas || !faceLandmarkerRef.current) {
+      
+      if (isDetecting.current || !video || !canvas || !faceLandmarkerRef.current) {
         animationFrameId.current = requestAnimationFrame(predictWebcam);
         return;
       }
@@ -197,8 +199,11 @@ export const useFaceExpressions = ({
         canvas.style.transform = 'scaleX(-1)';
       }
 
+      isDetecting.current = true;
       const startTimeMs = performance.now();
       const results = faceLandmarkerRef.current.detectForVideo(video, startTimeMs);
+      isDetecting.current = false;
+
       const canvasCtx = canvas.getContext("2d");
 
       if (canvasCtx) {
@@ -237,7 +242,9 @@ export const useFaceExpressions = ({
     const initialize = async () => {
       await createFaceLandmarker();
       video.addEventListener("loadeddata", () => {
-        animationFrameId.current = requestAnimationFrame(predictWebcam);
+        if (!animationFrameId.current) {
+            animationFrameId.current = requestAnimationFrame(predictWebcam);
+        }
       });
     };
     
@@ -246,10 +253,25 @@ export const useFaceExpressions = ({
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
       }
-      faceLandmarkerRef.current?.close();
+      if (faceLandmarkerRef.current && !isDetecting.current) {
+          faceLandmarkerRef.current.close();
+          faceLandmarkerRef.current = null;
+      }
     };
   }, [videoRef, canvasRef]);
+
+  useEffect(() => {
+    // Log only when there's a detected expression to avoid flooding the console
+    if (analysis.dominantExpression !== 'Neutral' || analysis.activeExpressions.length > 0) {
+      console.log('Expression Analysis:', {
+        dominant: analysis.dominantExpression,
+        active: analysis.activeExpressions,
+        scores: analysis.expressions,
+      });
+    }
+  }, [analysis]);
 
   return analysis;
 }; 
