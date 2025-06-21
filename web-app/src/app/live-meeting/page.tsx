@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useSendMicToAssembly } from '@/hooks/useSendMicToAssembly'
 import { useFaceExpressions } from '@/hooks/useFaceExpressions'
+import { useLiveKitSpeaker } from '@/hooks/useLiveKitSpeaker'
 
 interface Transcript {
   text: string;
@@ -45,11 +46,13 @@ export default function LiveMeetingPage() {
 
   // --- HOOKS ---
   const expressionFeedback = useFaceExpressions({ stream });
+  const currentSpeaker = useLiveKitSpeaker();
+
   useSendMicToAssembly({
     stream,
     isRecording,
     onTranscript: (transcript) => {
-      const speaker = getSpeakerDisplayName(transcript.speaker);
+      const speaker = currentSpeaker ? currentSpeaker.toUpperCase() : 'SPEAKER';
       setFinalTranscripts(prev => [...prev, { ...transcript, speaker }]);
     },
   });
