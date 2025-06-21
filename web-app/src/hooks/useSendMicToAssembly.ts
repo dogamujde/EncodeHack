@@ -8,14 +8,15 @@ interface Transcript {
 interface UseSendMicToAssemblyProps {
   stream: MediaStream | null;
   isRecording: boolean;
-  onTranscript: (transcript: Transcript) => void;
-  onSuggestion?: (text: string) => void;
+  onTranscript: (transcript: { text: string; confidence?: number }) => void;
+  onPartialTranscript?: (transcript: { text: string; confidence?: number }) => void;
 }
 
 export const useSendMicToAssembly = ({
   stream,
   isRecording,
   onTranscript,
+  onPartialTranscript,
 }: UseSendMicToAssemblyProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +85,9 @@ export const useSendMicToAssembly = ({
           
           if (data.message_type === 'FinalTranscript' && data.text) {
             const speaker = data.words && data.words.length > 0 ? data.words[0].speaker : undefined;
-            onTranscript({ text: data.text, speaker });
+            onTranscript({ text: data.text, confidence: data.confidence });
+          } else if (data.message_type === 'PartialTranscript' && onPartialTranscript) {
+            onPartialTranscript({ text: data.text, confidence: data.confidence });
           } else if (data.message_type === 'SessionBegins') {
             console.log('🎉 AssemblyAI session started');
           } else if (data.message_type === 'SessionTerminated') {
@@ -112,7 +115,7 @@ export const useSendMicToAssembly = ({
       setError(err.message || 'Failed to connect');
       isInitializedRef.current = false;
     }
-  }, [stream, isRecording, onTranscript]);
+  }, [stream, isRecording, onTranscript, onPartialTranscript]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {

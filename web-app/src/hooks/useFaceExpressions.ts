@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 // --- Landmark Constants for Expression Detection ---
 const P1_LOWER_EYELID = 145;
@@ -13,120 +14,106 @@ const P1_LEFT_EYE_TOP = 159;
 const P1_RIGHT_EYE_TOP = 386;
 const UPPER_LIP_CENTER = 13;
 const LOWER_LIP_CENTER = 14;
+const MOUTH_CORNER_LEFT = 61;
+const MOUTH_CORNER_RIGHT = 291;
 
 interface UseFaceExpressionsProps {
-  stream: MediaStream | null;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
-export const useFaceExpressions = ({ stream }: UseFaceExpressionsProps) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const faceMeshRef = useRef<any | null>(null);
-  const [feedback, setFeedback] = useState<string>('');
-  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showFeedback = (text: string) => {
-    if (feedbackTimeoutRef.current) {
-      clearTimeout(feedbackTimeoutRef.current);
-    }
-    setFeedback(text);
-    feedbackTimeoutRef.current = setTimeout(() => setFeedback(''), 3000);
-  };
-
-  const getDistance = (p1: any, p2: any) => {
-    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
-  };
+export const useFaceExpressions = ({ videoRef, canvasRef }: UseFaceExpressionsProps) => {
+  const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
+  const [blendShapes, setBlendShapes] = useState<any[]>([]);
+  const animationFrameId = useRef<number | null>(null);
+  const lastVideoTimeRef = useRef(-1);
 
   useEffect(() => {
-    if (!stream) {
-      // Clean up if the stream is removed
-      if (faceMeshRef.current) {
-        faceMeshRef.current.close();
-        faceMeshRef.current = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+    const video = videoRef.current;
+    if (!video) {
       return;
     }
 
-    let faceMesh: any;
-    let localVideoEl: HTMLVideoElement;
+    const createFaceLandmarker = async () => {
+      const filesetResolver = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+      );
+      const faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+          delegate: "GPU"
+        },
+        outputFaceBlendshapes: true,
+        runningMode: "VIDEO",
+        numFaces: 1
+      });
+      faceLandmarkerRef.current = faceLandmarker;
+    };
 
-    const onResults = (results: any) => {
-      if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+    const predictWebcam = () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas || !faceLandmarkerRef.current) {
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
         return;
       }
-      const landmarks = results.multiFaceLandmarks[0];
 
-      // Expression detection logic...
-      const leftEyeVerticalDist = getDistance(landmarks[P1_UPPER_EYELID], landmarks[P1_LOWER_EYELID]);
-      const rightEyeVerticalDist = getDistance(landmarks[P2_UPPER_EYELID], landmarks[P2_LOWER_EYELID]);
-      if (leftEyeVerticalDist < 0.01 && rightEyeVerticalDist < 0.01) {
-        showFeedback('Blink Detected');
+      if (video.currentTime === lastVideoTimeRef.current) {
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
+        return;
+      }
+      lastVideoTimeRef.current = video.currentTime;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const startTimeMs = performance.now();
+      const results = faceLandmarkerRef.current.detectForVideo(video, startTimeMs);
+      const canvasCtx = canvas.getContext("2d");
+
+      if (canvasCtx) {
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        const drawingUtils = new DrawingUtils(canvasCtx);
+        if (results.faceLandmarks) {
+          for (const landmarks of results.faceLandmarks) {
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
+          }
+        }
+        canvasCtx.restore();
       }
 
-      const leftEyebrowDist = getDistance(landmarks[P1_LEFT_EYEBROW], landmarks[P1_LEFT_EYE_TOP]);
-      const rightEyebrowDist = getDistance(landmarks[P1_RIGHT_EYEBROW], landmarks[P1_RIGHT_EYE_TOP]);
-      if (leftEyebrowDist > 0.08 || rightEyebrowDist > 0.08) {
-        showFeedback('Eyebrows Raised');
+      if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
+        setBlendShapes(results.faceBlendshapes[0].categories);
       }
-
-      const lipDist = getDistance(landmarks[UPPER_LIP_CENTER], landmarks[LOWER_LIP_CENTER]);
-      if (lipDist > 0.03) {
-        showFeedback('Lip Movement Detected');
-      }
+      
+      animationFrameId.current = requestAnimationFrame(predictWebcam);
     };
 
     const initialize = async () => {
-      // Create a hidden video element to process the stream
-      localVideoEl = document.createElement('video');
-      localVideoEl.autoplay = true;
-      localVideoEl.muted = true;
-      localVideoEl.style.display = 'none';
-      localVideoEl.srcObject = stream;
-      videoRef.current = localVideoEl;
-      document.body.appendChild(localVideoEl);
-
-      const { FaceMesh } = await import('@mediapipe/face_mesh');
-      faceMesh = new FaceMesh({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+      await createFaceLandmarker();
+      video.addEventListener("loadeddata", () => {
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
       });
-      faceMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-      faceMesh.onResults(onResults);
-      faceMeshRef.current = faceMesh;
-
-      const processVideo = async () => {
-        if (localVideoEl.readyState >= 3 && faceMeshRef.current) {
-          await faceMeshRef.current.send({ image: localVideoEl });
-        }
-        if (faceMeshRef.current) { // Continue processing if mesh is still active
-          requestAnimationFrame(processVideo);
-        }
-      };
-
-      localVideoEl.onloadeddata = () => {
-        requestAnimationFrame(processVideo);
-      };
     };
-
+    
     initialize();
 
     return () => {
-      faceMesh?.close();
-      faceMeshRef.current = null;
-      if (localVideoEl) {
-        document.body.removeChild(localVideoEl);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
       }
-      if (feedbackTimeoutRef.current) {
-        clearTimeout(feedbackTimeoutRef.current);
-      }
+      faceLandmarkerRef.current?.close();
     };
-  }, [stream]);
+  }, [videoRef, canvasRef]);
 
-  return feedback;
+  return blendShapes;
 }; 

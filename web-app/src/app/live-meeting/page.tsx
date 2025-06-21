@@ -22,6 +22,11 @@ interface Transcript {
   speaker?: string;
 }
 
+interface BlendShape {
+  categoryName: string;
+  score: number;
+}
+
 export default function LiveMeetingPage() {
   const router = useRouter()
   const [isVideoOn, setIsVideoOn] = useState(true);
@@ -30,22 +35,39 @@ export default function LiveMeetingPage() {
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   const [finalTranscripts, setFinalTranscripts] = useState<Transcript[]>([]);
   
   // Speaker diarization logic
   const speakerMapRef = useRef<Record<string, number>>({});
-  const nextSpeakerIdRef = useRef(1);
-  const getSpeakerDisplayName = (speakerLabel?: string): string => {
-    if (!speakerLabel) return 'SPEAKER';
-    if (!speakerMapRef.current[speakerLabel]) {
-      speakerMapRef.current[speakerLabel] = nextSpeakerIdRef.current++;
+  
+  const handleToggleVideo = () => {
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !isVideoOn;
+      }
     }
-    return `SPEAKER ${speakerMapRef.current[speakerLabel]}`;
+    setIsVideoOn(!isVideoOn);
+  };
+  
+  const handleToggleMute = () => {
+    if (stream) {
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !isMuted;
+      }
+    }
+    setIsMuted(!isMuted);
+  };
+  
+  const handleToggleRecording = () => {
+    setIsRecording(!isRecording);
   };
 
   // --- HOOKS ---
-  const expressionFeedback = useFaceExpressions({ stream });
+  const blendShapes = useFaceExpressions({ videoRef, canvasRef });
   const currentSpeaker = useLiveKitSpeaker();
 
   useSendMicToAssembly({
@@ -57,118 +79,100 @@ export default function LiveMeetingPage() {
     },
   });
 
-  // Timer logic
-  const [elapsedTime, setElapsedTime] = useState(0);
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRecording) {
-      interval = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
-      }, 1000);
-    } else {
-      setElapsedTime(0);
-    }
-    return () => clearInterval(interval);
-  }, [isRecording]);
-
-  const formattedTime = new Date(elapsedTime * 1000).toISOString().substr(14, 5);
-
-  // --- MEDIA STREAM MANAGEMENT ---
-  useEffect(() => {
-    let isCancelled = false;
     async function getMedia() {
-      if (isCancelled) return;
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720 },
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+          video: true,
+          audio: true,
         });
-        if (!isCancelled) {
-          setStream(mediaStream);
-          if (videoRef.current) videoRef.current.srcObject = mediaStream;
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
         }
       } catch (err) {
-        console.error('Error accessing media devices.', err);
+        console.error("Error accessing media devices.", err);
       }
     }
+    getMedia();
 
-    if (isVideoOn) {
-      getMedia();
-    } else {
+    return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
-        setStream(null);
       }
-    }
-    return () => {
-      isCancelled = true;
-      if (stream) stream.getTracks().forEach(track => track.stop());
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVideoOn]);
-
-  // --- UI HANDLERS ---
-  const handleToggleRecording = () => setIsRecording(prev => !prev);
-  const handleToggleVideo = () => setIsVideoOn(prev => !prev);
-  const handleToggleMute = () => {
-    setIsMuted(prev => {
-      const nextMuted = !prev;
-      if (stream) stream.getAudioTracks().forEach(track => track.enabled = !nextMuted);
-      return nextMuted;
-    });
-  };
+  }, []);
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
       <div className="flex-1 flex flex-col p-4 gap-4">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden">
+          <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden aspect-video">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+            <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100" />
             {!stream && isVideoOn && 
               <div className="absolute inset-0 bg-black flex items-center justify-center">
-                  <p>Requesting camera access...</p>
+                <p>Starting camera...</p>
               </div>
             }
-            {!isVideoOn && (
+            {!isVideoOn && 
               <div className="absolute inset-0 bg-black flex items-center justify-center">
                 <CameraOff className="h-16 w-16 text-gray-500" />
               </div>
-            )}
-            {expressionFeedback && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-lg transition-opacity duration-300">
-                {expressionFeedback}
-              </div>
-            )}
+            }
           </div>
           <div className="w-full h-full bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
             <h2 className="text-xl font-bold mb-4">Live Transcript</h2>
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            <div className="flex-1 space-y-2 overflow-y-auto">
               {finalTranscripts.map((item, index) => (
-                <div key={index} className="flex gap-3">
-                  <div className="font-bold w-24 flex-shrink-0 text-gray-400">{item.speaker}:</div>
-                  <div className="text-gray-200">{item.text}</div>
+                <div key={index}>
+                  <span className="font-semibold text-blue-400">{item.speaker}: </span>
+                  <span>{item.text}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-        <div className="h-24 bg-[#1a1a1a] rounded-lg flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <span className="text-lg font-semibold">{formattedTime}</span>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-48">
+          {/* Audio & Recording Controls */}
+          <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col justify-between">
+            <h3 className="text-lg font-bold mb-2">Audio & Recording</h3>
+            <div className="flex items-center justify-around">
+              <Button onClick={handleToggleMute} variant="ghost">
+                {isMuted ? <MicOff /> : <Mic />}
+              </Button>
+              <Button onClick={handleToggleVideo} variant="ghost">
+                {isVideoOn ? <Camera /> : <CameraOff />}
+              </Button>
+              <Button onClick={handleToggleRecording} variant={isRecording ? 'destructive' : 'default'}>
+                {isRecording ? <Square className="mr-2" /> : <Play className="mr-2" />}
+                {isRecording ? 'Stop' : 'Record'}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button onClick={handleToggleVideo} variant="outline" size="lg" className="bg-transparent border-gray-600 hover:bg-gray-700">
-              {isVideoOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-            </Button>
-            <Button onClick={handleToggleMute} variant="outline" size="lg" className="bg-transparent border-gray-600 hover:bg-gray-700">
-              {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-            </Button>
-            <Button onClick={handleToggleRecording} variant={isRecording ? 'destructive' : 'default'} size="lg">
-              {isRecording ? <Square className="h-6 w-6 mr-2" /> : <Play className="h-6 w-6 mr-2" />}
-              {isRecording ? 'Stop' : 'Record'}
-            </Button>
+
+          {/* Blend Shapes Display */}
+          <div className="md:col-span-2 bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
+             <h3 className="text-lg font-bold mb-2">Expression Blend Shapes</h3>
+             <div className="flex-1 overflow-y-auto text-sm pr-2">
+                <ul className="space-y-1">
+                  {blendShapes.map((shape: BlendShape) => (
+                    <li key={shape.categoryName} className="flex items-center gap-2">
+                      <span className="w-32 truncate" title={shape.categoryName.replace(/([A-Z])/g, ' $1').trim()}>
+                        {shape.categoryName.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                      <div className="flex-1 bg-gray-600 rounded-sm relative h-4 flex items-center">
+                        <div className="h-full bg-teal-400 rounded-sm" style={{ width: `${shape.score * 100}%` }}></div>
+                        <span className="absolute inset-y-0 left-2 flex items-center font-mono text-white mix-blend-difference">
+                          {shape.score.toFixed(4)}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+             </div>
           </div>
-           <div className="w-48"></div> {/* Spacer */}
         </div>
       </div>
     </div>
