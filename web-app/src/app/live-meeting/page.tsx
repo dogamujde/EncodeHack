@@ -52,38 +52,51 @@ export default function LiveMeetingPage() {
 
   // Initialize camera
   useEffect(() => {
-    const initCamera = async () => {
+    // Stop any existing stream when the camera is turned off
+    if (!isVideoOn) {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+        setStream(null)
+        setIsConnected(false)
+      }
+      return
+    }
+
+    let isCancelled = false
+
+    const startStream = async () => {
       try {
-        if (isVideoOn) {
-          const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480 },
-            audio: true
-          })
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
+          audio: true,
+        })
+        if (!isCancelled) {
           setStream(mediaStream)
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream
-          }
           setIsConnected(true)
-        } else {
-          if (stream) {
-            stream.getTracks().forEach(track => track.stop())
-            setStream(null)
-          }
         }
       } catch (error) {
         console.error('Error accessing camera:', error)
         setIsConnected(false)
+        if (!isCancelled) {
+          setIsVideoOn(false) // Turn off toggle if permission is denied
+        }
       }
     }
 
-    initCamera()
+    startStream()
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
+      isCancelled = true
+      // The main stream cleanup is now handled when isVideoOn becomes false
     }
-  }, [isVideoOn, stream])
+  }, [isVideoOn])
+
+  // Effect to attach stream to video element
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream
+    }
+  }, [stream])
 
   const toggleCamera = () => {
     setIsVideoOn(!isVideoOn)
@@ -164,7 +177,7 @@ export default function LiveMeetingPage() {
                     autoPlay
                     muted
                     playsInline
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover -scale-x-100"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-700">

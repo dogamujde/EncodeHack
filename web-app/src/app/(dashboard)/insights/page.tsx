@@ -6,10 +6,7 @@ import {
   TrendingUp, 
   BarChart3, 
   PieChart, 
-  Activity, 
   Users, 
-  Target,
-  Play,
   ArrowRight,
   Eye,
   Calendar
@@ -17,7 +14,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/contexts/auth-context'
 
 // Mock analytics data
 const analyticsOverview = {
@@ -29,125 +25,54 @@ const analyticsOverview = {
   participationRate: 87,
   trends: {
     meetingsChange: "+12%",
-    sentimentChange: "+5%", 
-    participationChange: "-2%"
+    durationChange: "-5%",
+    participationChange: "+3%",
+    sentimentChange: "+8%"
   }
 }
 
-const chartData = [
-  { month: "Nov", meetings: 18, hours: 32, sentiment: 78 },
-  { month: "Dec", meetings: 24, hours: 42, sentiment: 82 },
-  { month: "Jan", meetings: 28, hours: 48, sentiment: 85 }
-]
-
 const topInsights = [
   {
-    title: "Meeting Duration Optimization",
-    description: "Meetings are averaging 15% longer than scheduled time",
+    title: "Increased positive sentiment in Q4",
+    description: "Team meetings have shown a significant increase in positive language and engagement.",
     impact: "high",
-    suggestion: "Consider time-boxing discussion topics"
+    suggestion: "Continue fostering open communication and positive reinforcement."
   },
   {
-    title: "Participation Imbalance",
-    description: "3 team members dominate 70% of speaking time",
-    impact: "medium", 
-    suggestion: "Implement round-robin discussion format"
+    title: "Talking speed slightly above optimal range",
+    description: "Average talking speed is 165 WPM, slightly higher than the recommended 140-160 WPM.",
+    impact: "medium",
+    suggestion: "Encourage team members to be mindful of their pacing for better clarity."
   },
   {
-    title: "Positive Sentiment Trend",
-    description: "Team sentiment has improved 15% over last month",
-    impact: "positive",
-    suggestion: "Continue current meeting practices"
+      title: "Action items are consistently assigned",
+      description: "95% of meetings result in clearly defined action items, improving accountability.",
+      impact: "positive",
+      suggestion: "Leverage the AI assistant to automatically track and follow up on action items."
   }
+]
+
+// Mock chart data
+const chartData = [
+  { month: "October", meetings: 8, hours: 14, sentiment: 82 },
+  { month: "November", meetings: 10, hours: 18, sentiment: 85 },
+  { month: "December", meetings: 6, hours: 10.5, sentiment: 90 },
 ]
 
 export default function InsightsPage() {
   const router = useRouter()
-  const { user, isLoading } = useAuth()
   const [activeView, setActiveView] = useState('overview')
 
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-      </div>
-    )
-  }
-
-  // Redirect if not authenticated
-  if (!user) {
-    router.push('/')
-    return null
-  }
-
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900 px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Insights & Analytics</h1>
-            <p className="text-gray-400 mt-1">Understand your meeting patterns and performance</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
-              Back to Dashboard
-            </Button>
-            <Button onClick={() => router.push('/demo')} className="bg-purple-500 hover:bg-purple-600">
-              <Play className="w-4 h-4 mr-2" />
-              View Product Demo
-            </Button>
-          </div>
+    <div className="p-6 space-y-8">
+        {/* Header */}
+        <div>
+            <h1 className="text-2xl font-bold text-white">Insights</h1>
+            <p className="text-gray-400 mt-1">Analyze your team&apos;s meeting performance.</p>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gray-900 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer" onClick={() => router.push('/demo')}>
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Play className="w-6 h-6 text-purple-400" />
-              </div>
-              <h3 className="font-semibold text-white mb-2">Product Demo</h3>
-              <p className="text-gray-400 text-sm">See our AI features in action</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-6 h-6 text-blue-400" />
-              </div>
-              <h3 className="font-semibold text-white mb-2">Detailed Reports</h3>
-              <p className="text-gray-400 text-sm">Export comprehensive analytics</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Target className="w-6 h-6 text-green-400" />
-              </div>
-              <h3 className="font-semibold text-white mb-2">Goal Tracking</h3>
-              <p className="text-gray-400 text-sm">Monitor meeting objectives</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-800">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Activity className="w-6 h-6 text-orange-400" />
-              </div>
-              <h3 className="font-semibold text-white mb-2">Real-time Metrics</h3>
-              <p className="text-gray-400 text-sm">Live meeting performance</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Analytics Overview */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        
+        {/* Overview Stats */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-6 text-center">
               <div className="text-3xl font-bold text-white mb-2">{analyticsOverview.totalMeetings}</div>
@@ -155,7 +80,7 @@ export default function InsightsPage() {
               <div className="text-green-400 text-xs font-medium">{analyticsOverview.trends.meetingsChange} from last month</div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-6 text-center">
               <div className="text-3xl font-bold text-white mb-2">{analyticsOverview.totalHours}h</div>
@@ -353,7 +278,6 @@ export default function InsightsPage() {
             </Card>
           </div>
         )}
-      </div>
     </div>
   )
 } 
