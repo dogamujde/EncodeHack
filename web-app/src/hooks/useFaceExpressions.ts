@@ -27,7 +27,7 @@ interface ExpressionAnalysis {
 interface UseFaceExpressionsProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  expressionThresholds?: Partial<{ [key: string]: number }>;
+  expressionThresholds?: Partial<Record<keyof typeof defaultThresholds, number>>;
 }
 
 // --- Mappings ---
@@ -40,17 +40,9 @@ const blendshapeToExpression: { [key: string]: string } = {
   browOuterUpRight: 'Surprised',
   eyeSquintLeft: 'Focused',
   eyeSquintRight: 'Focused',
-  eyeWideLeft: 'Fear',
-  eyeWideRight: 'Fear',
-  cheekSquintLeft: 'Joy',
-  cheekSquintRight: 'Joy',
-  noseSneerLeft: 'Disgust',
-  noseSneerRight: 'Disgust',
   jawOpen: 'Surprised',
   mouthSmileLeft: 'Happy',
   mouthSmileRight: 'Happy',
-  mouthFrownLeft: 'Sad',
-  mouthFrownRight: 'Sad',
   mouthPressLeft: 'Thinking',
   mouthPressRight: 'Thinking',
   // Note: 'Confused' is a derived expression, but we can add a placeholder
@@ -58,9 +50,18 @@ const blendshapeToExpression: { [key: string]: string } = {
 };
 
 const ALL_EXPRESSIONS = [
-  'Angry', 'Curious', 'Surprised', 'Focused', 'Fear', 'Joy',
-  'Disgust', 'Happy', 'Sad', 'Thinking', 'Confused'
+  'Angry', 'Curious', 'Surprised', 'Focused', 'Happy', 'Thinking', 'Confused'
 ];
+
+const defaultThresholds = {
+  Angry: 0.4,
+  Curious: 0.3,
+  Surprised: 0.5,
+  Focused: 0.3,
+  Happy: 0.4,
+  Thinking: 0.3,
+  Confused: 0.3,
+};
 
 const initialAnalysisState: ExpressionAnalysis = {
   dominantExpression: 'Neutral',
@@ -68,27 +69,19 @@ const initialAnalysisState: ExpressionAnalysis = {
   expressions: Object.fromEntries(ALL_EXPRESSIONS.map(e => [e, 0])),
 };
 
-const defaultThresholds: { [key: string]: number } = {
-  'Curious': 0.3, 'Angry': 0.4, 'Surprised': 0.5,
-  'Focused': 0.3, 'Happy': 0.4, 'Sad': 0.3,
-  'Fear': 0.4, 'Thinking': 0.3, 'Confused': 0.3
-};
-
-export const useFaceExpressions = ({ 
-  videoRef, 
-  canvasRef, 
-  expressionThresholds: customThresholds 
+export const useFaceExpressions = ({
+  videoRef,
+  canvasRef,
+  expressionThresholds: customThresholds,
 }: UseFaceExpressionsProps) => {
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
   const [analysis, setAnalysis] = useState<ExpressionAnalysis>(initialAnalysisState);
   const animationFrameId = useRef<number | null>(null);
   const lastVideoTimeRef = useRef(-1);
-  const smoothedScoresRef = useRef<{ [key:string]: number }>({ ...initialAnalysisState.expressions });
-
-  const expressionThresholds = { ...defaultThresholds, ...customThresholds };
+  const smoothedScoresRef = useRef<{ [key: string]: number }>({ ...initialAnalysisState.expressions });
 
   const analyzeBlendshapes = (blendshapes: Classifications[]) => {
-    // 1. Get raw scores
+    // 1. Get raw scores for this frame
     const rawScores: { [key: string]: number } = { ...initialAnalysisState.expressions };
     if (blendshapes && blendshapes.length > 0) {
       const categories = blendshapes[0].categories;
@@ -100,49 +93,52 @@ export const useFaceExpressions = ({
       }
     }
 
-    // 2. Smooth base expressions
-    const smoothingFactor = 0.2;
+    // 2. Apply smoothing to base expressions
+    const smoothingFactor = 0.1;
     const currentSmoothed = smoothedScoresRef.current;
     const newSmoothedScores: { [key: string]: number } = {};
     for (const key in rawScores) {
-      if (key === 'Confused') continue;
+      if (key === 'Confused') continue; // Skip 'Confused' for now
       newSmoothedScores[key] = (currentSmoothed[key] * (1 - smoothingFactor)) + (rawScores[key] * smoothingFactor);
     }
-    
-    // 3. Derive and smooth 'Confused' score
+
+    // 3. Derive and smooth the 'Confused' score with a decay mechanism
     const potentialConfusedScore = (newSmoothedScores['Angry'] + newSmoothedScores['Thinking']) / 2;
-    if (potentialConfusedScore > currentSmoothed['Confused']) {
-      newSmoothedScores['Confused'] = potentialConfusedScore;
-    } else {
-      newSmoothedScores['Confused'] = currentSmoothed['Confused'] * (1 - smoothingFactor);
-    }
+
+    // Apply the same smoothing to the derived 'Confused' score
+    newSmoothedScores['Confused'] = 
+      (currentSmoothed['Confused'] * (1 - smoothingFactor)) + (potentialConfusedScore * smoothingFactor);
+    
     smoothedScoresRef.current = newSmoothedScores;
 
-    // 4. Determine active and dominant expressions from sorted, smoothed scores
-    const sortedExpressions = Object.entries(newSmoothedScores)
-      .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+    // 4. Determine active expressions based on smoothed scores
+    const thresholds = { ...defaultThresholds, ...customThresholds };
+    const activeExpressions = new Set<string>();
 
-    let activeExpressions = sortedExpressions
-      .filter(([expression, score]) => score > (expressionThresholds[expression] || 0))
-      .map(([expression]) => expression);
-
-    let dominantExpression = activeExpressions.length > 0 ? activeExpressions[0] : 'Neutral';
-
-    // Special Rule: If 'Confused' is dominant, suppress related expressions
-    if (dominantExpression === 'Confused') {
-      activeExpressions = activeExpressions.filter(
-        exp => exp !== 'Angry' && exp !== 'Thinking' && exp !== 'Focused'
-      );
-      // Ensure 'Confused' remains if it was filtered out (in case its score is lower than a suppressed one)
-      if (!activeExpressions.includes('Confused')) {
-        activeExpressions.unshift('Confused');
+    for (const [expression, score] of Object.entries(newSmoothedScores)) {
+      const threshold = (thresholds as any)[expression];
+      if (threshold && score > threshold) {
+        activeExpressions.add(expression);
       }
     }
-    
-    // 5. Set final state for UI
+
+    if (activeExpressions.has('Confused')) {
+        activeExpressions.delete('Angry');
+        activeExpressions.delete('Thinking');
+        activeExpressions.delete('Focused');
+    }
+
+    // 5. Sort active expressions and determine dominant one
+    const activeExpressionsArray = Array.from(activeExpressions).sort(
+      (a, b) => newSmoothedScores[b] - newSmoothedScores[a]
+    );
+
+    const dominantExpression = activeExpressionsArray.length > 0 ? activeExpressionsArray[0] : 'Neutral';
+
+    // 6. Set final state for UI
     setAnalysis({
       dominantExpression,
-      activeExpressions: activeExpressions,
+      activeExpressions: activeExpressionsArray,
       expressions: newSmoothedScores,
     });
   };
@@ -253,7 +249,7 @@ export const useFaceExpressions = ({
       }
       faceLandmarkerRef.current?.close();
     };
-  }, [videoRef, canvasRef, expressionThresholds]);
+  }, [videoRef, canvasRef]);
 
   return analysis;
 }; 
