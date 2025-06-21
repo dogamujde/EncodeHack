@@ -17,8 +17,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useSendMicToAssembly } from '@/hooks/useSendMicToAssembly'
 
 type AudioDevice = 'computer' | 'phone'
+interface Transcript {
+  text: string;
+  speaker?: string;
+}
 
 export default function LiveMeetingPage() {
   const router = useRouter()
@@ -31,26 +36,26 @@ export default function LiveMeetingPage() {
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
+  const [finalTranscripts, setFinalTranscripts] = useState<Transcript[]>([])
 
-  // Mock transcript data
-  const [transcripts, setTranscripts] = useState([
-    {
-      id: 1,
-      speaker: "You",
-      text: "Hello everyone, welcome to today's meeting. Let's start with our agenda items.",
-      timestamp: "14:32:15",
-      confidence: 0.95,
-      type: "final" as const
-    },
-    {
-      id: 2,
-      speaker: "Sarah",
-      text: "Thanks for organizing this. I have updates on the project timeline...",
-      timestamp: "14:32:28",
-      confidence: 0.88,
-      type: "partial" as const
+  const speakerMapRef = useRef<Record<string, number>>({});
+  const nextSpeakerIdRef = useRef(1);
+
+  const getSpeakerDisplayName = (speakerLabel?: string): string => {
+    if (!speakerLabel) return 'SPEAKER';
+    if (!speakerMapRef.current[speakerLabel]) {
+      speakerMapRef.current[speakerLabel] = nextSpeakerIdRef.current++;
     }
-  ])
+    return `SPEAKER ${speakerMapRef.current[speakerLabel]}`;
+  };
+
+  useSendMicToAssembly({
+    stream: stream,
+    isRecording,
+    onTranscript: (transcript) => {
+      setFinalTranscripts(prev => [...prev, transcript]);
+    },
+  });
 
   // Initialize camera
   useEffect(() => {
@@ -115,18 +120,6 @@ export default function LiveMeetingPage() {
 
   const toggleRecording = () => {
     setIsRecording(!isRecording)
-    if (!isRecording) {
-      // Simulate new transcript entries when recording starts
-      const newTranscript = {
-        id: transcripts.length + 1,
-        speaker: "AI Assistant",
-        text: "Recording started. Real-time transcription is now active.",
-        timestamp: new Date().toLocaleTimeString(),
-        confidence: 1.0,
-        type: "final" as const
-      }
-      setTranscripts(prev => [...prev, newTranscript])
-    }
   }
 
   const handleEndMeeting = () => {
@@ -288,50 +281,23 @@ export default function LiveMeetingPage() {
                   <Users className="w-5 h-5" />
                   Live Transcripts
                 </span>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => {
+                  setFinalTranscripts([])
+                }}>
                   Clear
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-64 overflow-y-auto space-y-3">
-                {isRecording ? (
-                  <div className="space-y-3">
-                    {transcripts.map((transcript) => (
-                      <div
-                        key={transcript.id}
-                        className={`p-3 rounded-lg border-l-4 ${
-                          transcript.type === 'final'
-                            ? 'bg-green-500/10 border-green-400'
-                            : 'bg-yellow-500/10 border-yellow-400'
-                        }`}
-                      >
-                        <div className="flex justify-between text-xs text-gray-400 mb-1">
-                          <span>{transcript.timestamp} - {transcript.speaker}</span>
-                          <span>Confidence: {Math.round(transcript.confidence * 100)}%</span>
-                        </div>
-                        <p className="text-gray-200">{transcript.text}</p>
-                      </div>
-                    ))}
-                    {isRecording && (
-                      <div className="p-3 bg-blue-500/10 border-l-4 border-blue-400 rounded-lg">
-                        <div className="flex justify-between text-xs text-gray-400 mb-1">
-                          <span>{new Date().toLocaleTimeString()} - Live</span>
-                          <span className="animate-pulse">●</span>
-                        </div>
-                        <p className="text-gray-200">Listening for speech...</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <div className="text-center">
-                      <Mic className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Start recording to see live transcripts</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <CardContent className="h-80 overflow-y-auto space-y-4">
+              {finalTranscripts.map((transcript, index) => (
+                <div key={index}>
+                  <p className="text-white">
+                    <span className="font-semibold text-blue-400">{getSpeakerDisplayName(transcript.speaker)}:</span>
+                    {' '}
+                    {transcript.text}
+                  </p>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
