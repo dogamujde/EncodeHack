@@ -29,21 +29,27 @@ export default function LiveMeetingPage() {
   const [coachingStatus, setCoachingStatus] = useState<CoachingStatus>('idle');
   const [showHistory, setShowHistory] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   // Refs for media
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number>();
 
   // Unified media stream setup
   const setupMediaStream = async (video: boolean, audio: boolean) => {
     try {
+      console.log('🎥 Setting up media stream:', { video, audio });
+      
       // Stop any existing stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
       }
 
       if (!video && !audio) {
-        streamRef.current = null;
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
@@ -51,15 +57,44 @@ export default function LiveMeetingPage() {
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: video,
-        audio: audio
+      // Configure constraints for AssemblyAI compatibility
+      // Try simpler constraints first, let browser choose optimal settings
+      const constraints: MediaStreamConstraints = {
+        video: video ? { width: 640, height: 480 } : false,
+        audio: audio ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } : false,
+      };
+
+      console.log('🎯 Requesting media with constraints:', constraints);
+
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Log actual audio track settings
+      if (audio && newStream.getAudioTracks().length > 0) {
+        const audioTrack = newStream.getAudioTracks()[0];
+        const settings = audioTrack.getSettings();
+        console.log('🔊 Actual audio track settings:', settings);
+      }
+
+      console.log('🎤 Media stream created:', { 
+        audioTracks: newStream.getAudioTracks().length,
+        videoTracks: newStream.getVideoTracks().length 
       });
 
-      streamRef.current = stream;
+      setStream(newStream);
+
+      // Start audio level monitoring if audio is enabled
+      if (audio) {
+        startAudioLevelMonitoring(newStream);
+      } else {
+        stopAudioLevelMonitoring();
+      }
 
       if (video && videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = newStream;
         setIsVideoOn(true);
       } else if (!video && videoRef.current) {
         videoRef.current.srcObject = null;
@@ -67,35 +102,38 @@ export default function LiveMeetingPage() {
       }
       
     } catch (error) {
-      console.error('Error accessing media devices:', error);
+      console.error('❌ Error accessing media devices:', error);
+      setStream(null);
     }
   };
 
-  const toggleVideo = () => {
+  const toggleVideo = async () => {
     const newVideoState = !isVideoOn;
-    setIsVideoOn(newVideoState);
-    setupMediaStream(newVideoState, isRecording);
+    await setupMediaStream(newVideoState, isRecording);
   };
   
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
     const newRecordingState = !isRecording;
     setIsRecording(newRecordingState);
-    if (!newRecordingState && !isVideoOn) {
-      // If both are off, stop stream completely
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
+    
+          if (!newRecordingState && !isVideoOn) {
+        // If both are off, stop stream completely
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          setStream(null);
+        }
+        stopAudioLevelMonitoring();
+      } else {
+        await setupMediaStream(isVideoOn, newRecordingState);
       }
-    } else {
-      setupMediaStream(isVideoOn, newRecordingState);
-    }
   };
 
   // Initialize transcription with coaching callbacks
   const { isConnected: transcriptConnected, error: transcriptError } = useSendMicToAssembly({
-    stream: streamRef.current,
+    stream: stream, // Use state instead of ref
     isRecording,
     onSuggestion: (suggestion: string) => {
+      console.log('🎯 Received suggestion:', suggestion);
       setLiveFeedback(suggestion);
       addFeedbackItem(suggestion, 'suggestion');
       setCoachingStatus('active');
@@ -110,6 +148,7 @@ export default function LiveMeetingPage() {
       }, 10000);
     },
     onTranscript: (transcript: string) => {
+      console.log('📝 Received transcript:', transcript);
       setCurrentTranscript(transcript);
     }
   });
@@ -136,16 +175,63 @@ export default function LiveMeetingPage() {
   // Update connection status
   useEffect(() => {
     setIsConnected(transcriptConnected);
+    console.log('🔗 Transcription connection status:', transcriptConnected);
   }, [transcriptConnected]);
+
+  // Log errors
+  useEffect(() => {
+    if (transcriptError) {
+      console.error('❌ Transcription error:', transcriptError);
+    }
+  }, [transcriptError]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+      console.log('🧹 Cleaning up media stream on unmount');
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
+      stopAudioLevelMonitoring();
     };
-  }, []);
+  }, [stream]);
+
+  // Audio level monitoring
+  const startAudioLevelMonitoring = (mediaStream: MediaStream) => {
+    try {
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      const source = audioContextRef.current.createMediaStreamSource(mediaStream);
+      source.connect(analyserRef.current);
+
+      analyserRef.current.fftSize = 256;
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+
+      const updateAudioLevel = () => {
+        if (analyserRef.current) {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          setAudioLevel(Math.round(average));
+        }
+        animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+      };
+
+      updateAudioLevel();
+    } catch (error) {
+      console.error('❌ Error setting up audio level monitoring:', error);
+    }
+  };
+
+  const stopAudioLevelMonitoring = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setAudioLevel(0);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -167,6 +253,13 @@ export default function LiveMeetingPage() {
             <Badge variant={isConnected ? "default" : "destructive"}>
               {isConnected ? "Connected" : "Disconnected"}
             </Badge>
+            
+            {/* Debug info */}
+            <div className="text-xs text-gray-500">
+              Stream: {stream ? `Audio: ${stream.getAudioTracks().length}, Video: ${stream.getVideoTracks().length}` : 'None'}
+              {isRecording && <div>Audio Level: {audioLevel}</div>}
+              {transcriptError && <div className="text-red-500">Error: {transcriptError}</div>}
+            </div>
           </div>
         </div>
 
