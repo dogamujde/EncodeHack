@@ -22,11 +22,6 @@ interface Transcript {
   speaker?: string;
 }
 
-interface BlendShape {
-  categoryName: string;
-  score: number;
-}
-
 export default function LiveMeetingPage() {
   const router = useRouter()
   const [isVideoOn, setIsVideoOn] = useState(true);
@@ -67,7 +62,7 @@ export default function LiveMeetingPage() {
   };
 
   // --- HOOKS ---
-  const blendShapes = useFaceExpressions({ videoRef, canvasRef });
+  const expressionAnalysis = useFaceExpressions({ videoRef, canvasRef });
   const currentSpeaker = useLiveKitSpeaker();
 
   useSendMicToAssembly({
@@ -108,7 +103,7 @@ export default function LiveMeetingPage() {
       <div className="flex-1 flex flex-col p-4 gap-4">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden aspect-video">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full transform -scale-x-100" />
             <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full transform -scale-x-100" />
             {!stream && isVideoOn && 
               <div className="absolute inset-0 bg-black flex items-center justify-center">
@@ -152,20 +147,24 @@ export default function LiveMeetingPage() {
             </div>
           </div>
 
-          {/* Blend Shapes Display */}
+          {/* Expression Analysis */}
           <div className="md:col-span-2 bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
-             <h3 className="text-lg font-bold mb-2">Expression Blend Shapes</h3>
+             <h3 className="text-lg font-bold mb-2">Expression Analysis</h3>
              <div className="flex-1 overflow-y-auto text-sm pr-2">
+                <p className="mb-2">
+                  <span className="font-semibold">Detected Expressions: </span>
+                  <span className="font-bold text-teal-400">{expressionAnalysis.dominantExpression}</span>
+                </p>
                 <ul className="space-y-1">
-                  {blendShapes.map((shape: BlendShape) => (
-                    <li key={shape.categoryName} className="flex items-center gap-2">
-                      <span className="w-32 truncate" title={shape.categoryName.replace(/([A-Z])/g, ' $1').trim()}>
-                        {shape.categoryName.replace(/([A-Z])/g, ' $1').trim()}
+                  {Object.entries(expressionAnalysis.expressions).map(([expression, score]) => (
+                    <li key={expression} className="flex items-center gap-2">
+                      <span className="w-32 truncate" title={expression}>
+                        {expression}
                       </span>
                       <div className="flex-1 bg-gray-600 rounded-sm relative h-4 flex items-center">
-                        <div className="h-full bg-teal-400 rounded-sm" style={{ width: `${shape.score * 100}%` }}></div>
+                        <div className="h-full bg-teal-400 rounded-sm" style={{ width: `${score * 100}%` }}></div>
                         <span className="absolute inset-y-0 left-2 flex items-center font-mono text-white mix-blend-difference">
-                          {shape.score.toFixed(4)}
+                          {(score as number).toFixed(4)}
                         </span>
                       </div>
                     </li>
