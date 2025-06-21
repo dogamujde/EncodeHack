@@ -19,12 +19,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
+import { DailyCall } from '@/components/daily-call'
 
 export default function ProductDemoPage() {
   const router = useRouter()
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [selectedDemo, setSelectedDemo] = useState('realtime')
+  const [showDailyCall, setShowDailyCall] = useState(false)
 
   // Mock demo data
   const demoSections = [
@@ -358,6 +360,28 @@ export default function ProductDemoPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Live Call Section */}
+        <div className="mb-12">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">Live Video Call Demo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-400 mb-4">
+                Click the button below to create and join a live video call using Daily.co.
+              </p>
+              {!showDailyCall ? (
+                <Button onClick={() => setShowDailyCall(true)}>Start Live Call</Button>
+              ) : (
+                <div className="mt-4">
+                  <DailyCall />
+                  <Button variant="outline" className="mt-4" onClick={() => setShowDailyCall(false)}>End Call & Hide</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
