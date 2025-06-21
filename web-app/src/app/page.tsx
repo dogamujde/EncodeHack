@@ -3,8 +3,12 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { AuthModal } from "@/components/auth/auth-modal"
+import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function LandingPage() {
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
   const [authModal, setAuthModal] = React.useState<{
     isOpen: boolean
     mode: "signin" | "signup"
@@ -12,6 +16,13 @@ export default function LandingPage() {
     isOpen: false,
     mode: "signin"
   })
+
+  // Redirect to dashboard if user is authenticated
+  React.useEffect(() => {
+    if (user && !isLoading) {
+      router.push('/dashboard')
+    }
+  }, [user, isLoading, router])
 
   const openAuth = (mode: "signin" | "signup") => {
     setAuthModal({ isOpen: true, mode })
@@ -21,28 +32,45 @@ export default function LandingPage() {
     setAuthModal({ isOpen: false, mode: "signin" })
   }
 
+  const handleAuthSuccess = () => {
+    router.push('/dashboard')
+  }
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    )
+  }
+
+  // Don't render if user is authenticated (will redirect)
+  if (user) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 md:px-12">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">AI</span>
           </div>
           <span className="text-xl font-semibold">ProductivAI</span>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <Button 
             variant="ghost" 
-            size="sm"
             onClick={() => openAuth("signin")}
+            className="text-gray-300 hover:text-white"
           >
             Log In
           </Button>
           <Button 
             variant="primary" 
-            size="sm"
             onClick={() => openAuth("signup")}
           >
             Sign Up
@@ -51,109 +79,54 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <main className="relative">
-        {/* Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-black" />
+      <div className="relative">
+        {/* Grid background pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjEyMTIxIiBzdHJva2Utd2lkdGg9IjEiLz4KICAgIDwvcGF0dGVybj4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPgo8L3N2Zz4=')] opacity-20"></div>
         
-        {/* Grid Pattern Overlay */}
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
-        
-        {/* Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-6 text-center">
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-sm text-gray-300">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-              Now in Beta
-            </div>
+        <div className="relative px-6 py-20 md:py-32 text-center max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            See Your Meetings Like Never Before
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-400 mb-12 leading-relaxed max-w-3xl mx-auto">
+            Get real-time insights, feedback, and summaries — powered by AI that listens and learns as you speak.
+          </p>
+          
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Button 
+              size="lg" 
+              variant="primary"
+              className="text-lg px-8 py-4"
+              onClick={() => openAuth("signup")}
+            >
+              Try AI Meeting Insights Free
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="text-lg px-8 py-4"
+              onClick={() => openAuth("signin")}
+            >
+              Log In
+            </Button>
+          </div>
 
-            {/* Main Headline */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                See Your Meetings
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Like Never Before
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              Get real-time insights, feedback, and summaries — powered by AI that listens and learns as you speak.
-            </p>
-
-            {/* Feature Pills - Meeting Insights emphasized first */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-              {/* Emphasized Meeting Insights */}
-              <div className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-2 border-blue-500/30 text-base font-semibold text-blue-300 shadow-lg shadow-blue-500/10">
-                🎯 Meeting Insights
-              </div>
-              
-              {/* Other features */}
-              {[
-                "📅 Calendar-Aware Planning",
-                "✅ Auto-Assign Action Items", 
-                "🔕 Distraction-Free Meetings"
-              ].map((feature) => (
-                <div
-                  key={feature}
-                  className="px-4 py-2 rounded-full bg-gray-800/30 border border-gray-700 text-sm text-gray-300"
-                >
-                  {feature}
-                </div>
-              ))}
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-              <Button
-                variant="default"
-                size="xl"
-                onClick={() => openAuth("signup")}
-                className="w-full sm:w-auto min-w-[200px] shadow-2xl shadow-white/10"
-              >
-                Try AI Meeting Insights Free
-              </Button>
-              <Button
-                variant="outline"
-                size="xl"
-                onClick={() => openAuth("signin")}
-                className="w-full sm:w-auto min-w-[200px]"
-              >
-                Log In
-              </Button>
-            </div>
-
-            {/* Social Proof */}
-            <div className="pt-12">
-              <p className="text-sm text-gray-500 mb-4">
-                Trusted by teams at
-              </p>
-              <div className="flex items-center justify-center space-x-8 opacity-50">
-                {["Microsoft", "Google", "Slack", "Notion"].map((company) => (
-                  <div
-                    key={company}
-                    className="text-gray-600 font-medium text-sm"
-                  >
-                    {company}
-                  </div>
-                ))}
-              </div>
+          {/* Enhanced Features */}
+          <div className="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
+            {/* Meeting Insights - Featured */}
+            <div className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 text-blue-300 font-medium text-lg">
+              🎯 Meeting Insights
             </div>
           </div>
         </div>
-
-        {/* Floating Elements */}
-        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-      </main>
+      </div>
 
       {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModal.isOpen}
-        onClose={closeAuth}
+      <AuthModal 
+        isOpen={authModal.isOpen} 
+        onClose={closeAuth} 
         mode={authModal.mode}
+        onSuccess={handleAuthSuccess}
       />
     </div>
   )

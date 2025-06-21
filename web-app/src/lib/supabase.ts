@@ -1,14 +1,63 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = 'https://oeynqaeyimqytnhuxhxl.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9leW5xYWV5aW1xeXRuaHV4aHhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0OTc0MTYsImV4cCI6MjA2NjA3MzQxNn0.qxSA7m0pwS-5-XuVnLvhUzmRv6_0GKTUfq36_rWrNP8'
 
 // Client-side Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 // Server-side Supabase client with service role key
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+
+// Auth helper functions
+export const auth = {
+  // Sign up new user
+  signUp: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+    return { data, error }
+  },
+
+  // Sign in existing user
+  signIn: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    return { data, error }
+  },
+
+  // Sign out user
+  signOut: async () => {
+    const { error } = await supabase.auth.signOut()
+    return { error }
+  },
+
+  // Get current user
+  getUser: async () => {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    return { user, error }
+  },
+
+  // Get current session
+  getSession: async () => {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    return { session, error }
+  },
+
+  // Listen to auth state changes
+  onAuthStateChange: (callback: (event: string, session: unknown) => void) => {
+    return supabase.auth.onAuthStateChange(callback)
+  }
+}
 
 // Database Types
 export interface Meeting {
