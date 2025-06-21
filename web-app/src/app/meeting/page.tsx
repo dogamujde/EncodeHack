@@ -5,17 +5,11 @@ import { useRouter } from 'next/navigation'
 import { 
   Mic, 
   MicOff, 
-  Video, 
-  VideoOff, 
   Settings,
   Volume2,
-  VolumeX,
-  Check,
-  Monitor,
   Camera,
   CameraOff
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 export default function LiveMeetingPage() {
   const router = useRouter()
@@ -58,7 +52,7 @@ export default function LiveMeetingPage() {
         stream.getTracks().forEach(track => track.stop())
       }
     }
-  }, [isVideoOn])
+  }, [isVideoOn, stream])
 
   const toggleCamera = () => {
     setIsVideoOn(!isVideoOn)

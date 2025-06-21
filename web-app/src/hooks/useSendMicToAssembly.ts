@@ -4,10 +4,10 @@ interface UseSendMicToAssemblyProps {
   stream: MediaStream | null;
   isRecording: boolean;
   onTranscript: (text: string) => void;
-  onSuggestion: (text: string) => void;
+  onSuggestion?: (text: string) => void;
 }
 
-export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSuggestion }: UseSendMicToAssemblyProps) => {
+export const useSendMicToAssembly = ({ stream, isRecording, onTranscript }: UseSendMicToAssemblyProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -165,7 +165,7 @@ export const useSendMicToAssembly = ({ stream, isRecording, onTranscript, onSugg
               audioContext.close();
             },
             state: 'recording'
-          } as any;
+          } as unknown as MediaRecorder;
           
           console.log('✅ Audio processing started');
         } catch (err) {
