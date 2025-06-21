@@ -18,13 +18,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
+type AudioDevice = 'computer' | 'phone'
+
 export default function LiveMeetingPage() {
   const router = useRouter()
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOn, setIsVideoOn] = useState(true)
   const [isRecording, setIsRecording] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState('computer')
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<AudioDevice>('computer')
   const [volume, setVolume] = useState(75)
   
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -207,18 +209,18 @@ export default function LiveMeetingPage() {
             </CardContent>
           </Card>
 
-          {/* Audio Controls */}
+          {/* Audio & Recording Controls */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Headphones className="h-5 w-5" />
-                Audio Settings
+                Audio & Recording
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Computer Audio */}
+              {/* Audio Device Selection */}
               <div 
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                   selectedAudioDevice === 'computer' 
                     ? 'border-blue-500 bg-blue-500/10' 
                     : 'border-gray-600 hover:border-gray-500'
@@ -227,69 +229,50 @@ export default function LiveMeetingPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-                      <Volume2 className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-medium">Computer Audio</span>
+                    <Volume2 className="w-4 h-4 text-blue-400" />
+                    <span className="font-medium text-sm">Computer Audio</span>
                   </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                     selectedAudioDevice === 'computer' ? 'border-blue-500' : 'border-gray-400'
                   }`}>
                     {selectedAudioDevice === 'computer' && (
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Volume Control */}
-              <div className="flex items-center gap-4">
-                <Volume2 className="w-4 h-4 text-gray-400" />
-                <div className="flex-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={volume}
-                    onChange={(e) => setVolume(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                  />
+              {/* Volume & Recording Controls */}
+              <div className="flex items-center gap-4 pt-2">
+                <div className="flex-1 space-y-2">
+                   {/* Volume Control */}
+                  <div className="flex items-center gap-3">
+                    <Volume2 className="w-4 h-4 text-gray-400" />
+                    <div className="flex-1">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={volume}
+                        onChange={(e) => setVolume(Number(e.target.value))}
+                        className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400 w-8">{volume}%</span>
+                  </div>
                 </div>
-                <span className="text-sm text-gray-400 w-12">{volume}%</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recording Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Recording Controls
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <Button
-                  onClick={toggleRecording}
-                  variant={isRecording ? "destructive" : "default"}
-                  className="flex-1"
-                >
-                  {isRecording ? (
-                    <>
-                      <Square className="w-4 h-4 mr-2" />
-                      Stop Recording
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Start Recording
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={handleEndMeeting}>
-                  End Meeting
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={toggleRecording}
+                    variant={isRecording ? "destructive" : "default"}
+                    size="sm"
+                  >
+                    {isRecording ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleEndMeeting}>
+                    End
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
