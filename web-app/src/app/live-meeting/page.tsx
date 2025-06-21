@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useSendMicToAssembly } from '@/hooks/useSendMicToAssembly'
+import { useLiveKitSpeaker } from '@/hooks/useLiveKitSpeaker'
 
 type AudioDevice = 'computer' | 'phone'
 interface Transcript {
@@ -36,24 +37,19 @@ export default function LiveMeetingPage() {
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
-  const [finalTranscripts, setFinalTranscripts] = useState<Transcript[]>([])
+  const [finalTranscripts, setFinalTranscripts] = useState<string[]>([])
 
   const speakerMapRef = useRef<Record<string, number>>({});
   const nextSpeakerIdRef = useRef(1);
 
-  const getSpeakerDisplayName = (speakerLabel?: string): string => {
-    if (!speakerLabel) return 'SPEAKER';
-    if (!speakerMapRef.current[speakerLabel]) {
-      speakerMapRef.current[speakerLabel] = nextSpeakerIdRef.current++;
-    }
-    return `SPEAKER ${speakerMapRef.current[speakerLabel]}`;
-  };
+  const currentSpeaker = useLiveKitSpeaker();
 
   useSendMicToAssembly({
     stream: stream,
     isRecording,
     onTranscript: (transcript) => {
-      setFinalTranscripts(prev => [...prev, transcript]);
+      const labelled = currentSpeaker ? `${currentSpeaker.toUpperCase()}: ${transcript}` : transcript;
+      setFinalTranscripts(prev => [...prev, labelled]);
     },
   });
 
@@ -289,14 +285,10 @@ export default function LiveMeetingPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="h-80 overflow-y-auto space-y-4">
-              {finalTranscripts.map((transcript, index) => (
-                <div key={index}>
-                  <p className="text-white">
-                    <span className="font-semibold text-blue-400">{getSpeakerDisplayName(transcript.speaker)}:</span>
-                    {' '}
-                    {transcript.text}
-                  </p>
-                </div>
+              {finalTranscripts.map((line, index) => (
+                <p key={index} className="text-white">
+                  {line}
+                </p>
               ))}
             </CardContent>
           </Card>
