@@ -60,7 +60,7 @@ export default function LiveMeetingPage() {
       // Configure constraints for AssemblyAI compatibility
       // Try simpler constraints first, let browser choose optimal settings
       const constraints: MediaStreamConstraints = {
-        video: video ? { width: 640, height: 480 } : false,
+        video: video || false,
         audio: audio ? {
           echoCancellation: true,
           noiseSuppression: true,
@@ -95,12 +95,25 @@ export default function LiveMeetingPage() {
 
       if (video && videoRef.current) {
         videoRef.current.srcObject = newStream;
+        try {
+          // Some browsers (Safari) need an explicit play() call
+          await (videoRef.current as HTMLVideoElement).play();
+        } catch (err) {
+          console.warn('⚠️ video.play() failed:', err);
+        }
         setIsVideoOn(true);
       } else if (!video && videoRef.current) {
         videoRef.current.srcObject = null;
         setIsVideoOn(false);
       }
       
+      // Ensure state reflects requested video flag even if element wasn't ready yet
+      if (!video) {
+        setIsVideoOn(false);
+      } else if (video) {
+        setIsVideoOn(true);
+      }
+
     } catch (error) {
       console.error('❌ Error accessing media devices:', error);
       setStream(null);
@@ -232,6 +245,17 @@ export default function LiveMeetingPage() {
     }
     setAudioLevel(0);
   };
+
+  // Ensure video element is linked to stream after rerenders (React StrictMode double mount)
+  useEffect(() => {
+    if (isVideoOn && stream && videoRef.current) {
+      console.log('🔄 Binding video element to current stream');
+      videoRef.current.srcObject = stream;
+      (videoRef.current as HTMLVideoElement)
+        .play()
+        .catch(err => console.warn('⚠️ video.play() error:', err));
+    }
+  }, [isVideoOn, stream]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
