@@ -4,20 +4,26 @@ import React, { useEffect, useRef } from 'react';
 import DailyIframe from '@daily-co/daily-js';
 
 interface DailyCallProps {
-  onLocalVideoTrack?: (track: MediaStreamTrack) => void;
+  onTranscript?: (transcript: string) => void;
+  onFeedback?: (feedback: string[]) => void;
+  mediaStream: MediaStream;
 }
 
-export const DailyCall: React.FC<DailyCallProps> = ({ onLocalVideoTrack }) => {
+export const DailyCall: React.FC<DailyCallProps> = ({ 
+  onTranscript,
+  onFeedback,
+  mediaStream
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const callObjectRef = useRef<any>(null);
-
-  // Use a ref to store the latest callback without re-triggering the effect
-  const onLocalVideoTrackRef = useRef(onLocalVideoTrack);
-  useEffect(() => {
-    onLocalVideoTrackRef.current = onLocalVideoTrack;
-  }, [onLocalVideoTrack]);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
+    if (isInitialized.current) {
+      return;
+    }
+    isInitialized.current = true;
+
     const container = containerRef.current;
     if (!container) {
       return;
@@ -38,9 +44,6 @@ export const DailyCall: React.FC<DailyCallProps> = ({ onLocalVideoTrack }) => {
     const handleEvent = (event: any) => {
       switch (event.action) {
         case 'track-started':
-          if (event.participant?.local && event.track.kind === 'video') {
-            onLocalVideoTrackRef.current?.(event.track.persistentTrack);
-          }
           break;
         case 'error':
           console.error('Daily call error:', event);
@@ -58,15 +61,30 @@ export const DailyCall: React.FC<DailyCallProps> = ({ onLocalVideoTrack }) => {
       .on('error', handleEvent);
 
     const roomURL = 'https://meetingbot.daily.co/coaching-room';
-    callObject.join({ url: roomURL })
-      .catch(err => console.error("Failed to join Daily room:", err));
+    
+    // Join the room with devices off, then we will enable them with our custom stream.
+    callObject.join({ 
+      url: roomURL,
+      startVideoOff: true,
+      startAudioOff: true,
+    })
+      .catch(err => console.error("[DailyCall] Failed to join Daily room:", err));
+      
+    // Once we've joined, immediately set the input devices to our custom stream
+    callObject.once('joined-meeting', () => {
+      callObject.setInputDevicesAsync({
+        videoSource: mediaStream.getVideoTracks()[0],
+        audioSource: mediaStream.getAudioTracks()[0],
+      }).catch(err => console.error("[DailyCall] setInputDevicesAsync failed:", err));
+    });
 
     return () => {
       // This cleanup runs only once on unmount
       callObjectRef.current?.destroy();
       callObjectRef.current = null;
+      isInitialized.current = false;
     };
-  }, []); // Empty dependency array ensures this runs only once
+  }, [mediaStream]);
 
   return <div ref={containerRef} className="w-full h-full relative" />;
 };

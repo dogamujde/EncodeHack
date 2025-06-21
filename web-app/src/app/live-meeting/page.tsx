@@ -17,35 +17,74 @@ const DailyCall = dynamic(
 export default function LiveMeetingPage() {
   const [transcript, setTranscript] = useState("");
   const [feedback, setFeedback] = useState<string[]>([]);
-  const [videoTrack, setVideoTrack] = useState<MediaStreamTrack | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [isReadyForAnalysis, setIsReadyForAnalysis] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Attach the Daily.co video track to our hidden video element for analysis
+  // Step 1: Get the local camera stream as soon as the component mounts.
   useEffect(() => {
-    if (videoTrack && videoRef.current) {
-      videoRef.current.srcObject = new MediaStream([videoTrack]);
-    }
-  }, [videoTrack]);
+    navigator.mediaDevices.getUserMedia({ 
+      video: { width: 640, height: 360, frameRate: 15 }, // Request a modest resolution
+      audio: true 
+    })
+    .then(stream => {
+      setMediaStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    })
+    .catch(err => {
+      console.error('[LiveMeetingPage] Error getting user media:', err);
+    });
 
-  const expressionAnalysis = useFaceExpressions({ videoRef, canvasRef });
+    // Cleanup: stop the stream when the component unmounts
+    return () => {
+      mediaStream?.getTracks().forEach(track => track.stop());
+    };
+  }, []); // Empty dependency array ensures this runs only once
+
+  // Step 2: Set up the video element for analysis once the stream is ready.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && mediaStream) {
+      video.onloadedmetadata = () => {
+        video.play().catch(e => console.error("[LiveMeetingPage] Error playing hidden video:", e));
+      };
+      video.onplaying = () => {
+        setIsReadyForAnalysis(true);
+      };
+    }
+  }, [mediaStream]);
+
+  const expressionAnalysis = useFaceExpressions({ 
+    videoRef, 
+    canvasRef, 
+    isReady: isReadyForAnalysis 
+  });
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
       {/* Hidden elements for face analysis */}
-      <video ref={videoRef} autoPlay playsInline className="hidden"></video>
+      <video ref={videoRef} autoPlay playsInline muted className="hidden"></video>
       <canvas ref={canvasRef} className="hidden"></canvas>
       
       <div className="flex-1 flex flex-col p-4 gap-4">
         <h1 className="text-2xl font-bold">Live Coaching Session</h1>
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden">
-            <DailyCall 
-              onTranscript={setTranscript} 
-              onFeedback={setFeedback}
-              onLocalVideoTrack={setVideoTrack}
-            />
+            {mediaStream ? (
+              <DailyCall 
+                onTranscript={setTranscript} 
+                onFeedback={setFeedback}
+                mediaStream={mediaStream}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <p>Waiting for camera permissions...</p>
+              </div>
+            )}
           </div>
           <div className="w-full h-full flex flex-col gap-4">
             <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col h-1/2">

@@ -27,6 +27,7 @@ interface ExpressionAnalysis {
 interface UseFaceExpressionsProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  isReady: boolean;
   expressionThresholds?: Partial<Record<keyof typeof defaultThresholds, number>>;
 }
 
@@ -72,6 +73,7 @@ const initialAnalysisState: ExpressionAnalysis = {
 export const useFaceExpressions = ({
   videoRef,
   canvasRef,
+  isReady,
   expressionThresholds: customThresholds,
 }: UseFaceExpressionsProps) => {
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
@@ -136,15 +138,38 @@ export const useFaceExpressions = ({
 
     const dominantExpression = activeExpressionsArray.length > 0 ? activeExpressionsArray[0] : 'Neutral';
 
-    // 6. Set final state for UI
-    setAnalysis({
-      dominantExpression,
-      activeExpressions: activeExpressionsArray,
-      expressions: newSmoothedScores,
+    // 6. Set final state for UI, only if it has changed
+    setAnalysis(prevAnalysis => {
+      const hasDominantChanged = prevAnalysis.dominantExpression !== dominantExpression;
+      const haveActivesChanged =
+        prevAnalysis.activeExpressions.length !== activeExpressionsArray.length ||
+        prevAnalysis.activeExpressions.some((exp, i) => exp !== activeExpressionsArray[i]);
+      
+      // We also want to check if any of the scores have changed meaningfully
+      const haveScoresChanged = Object.keys(newSmoothedScores).some(key => {
+        const oldScore = (prevAnalysis.expressions as any)[key] || 0;
+        const newScore = (newSmoothedScores as any)[key] || 0;
+        return Math.abs(oldScore - newScore) > 0.0001; // Update if there's a small change
+      });
+
+      const shouldUpdate = hasDominantChanged || haveActivesChanged || haveScoresChanged;
+
+      if (shouldUpdate) {
+        return {
+          dominantExpression,
+          activeExpressions: activeExpressionsArray,
+          expressions: newSmoothedScores,
+        };
+      }
+      return prevAnalysis;
     });
   };
 
   useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) {
       return;
@@ -232,7 +257,7 @@ export const useFaceExpressions = ({
         canvasCtx.restore();
       }
 
-      if (results.faceBlendshapes) {
+      if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
         analyzeBlendshapes(results.faceBlendshapes);
       }
       
@@ -241,11 +266,20 @@ export const useFaceExpressions = ({
 
     const initialize = async () => {
       await createFaceLandmarker();
-      video.addEventListener("loadeddata", () => {
+
+      const startPredictionLoop = () => {
         if (!animationFrameId.current) {
             animationFrameId.current = requestAnimationFrame(predictWebcam);
         }
-      });
+      };
+
+      // If the video's metadata is already loaded, start the loop.
+      // Otherwise, wait for the 'loadeddata' event.
+      if (video.readyState >= 1) { // HAVE_METADATA
+        startPredictionLoop();
+      } else {
+        video.addEventListener("loadeddata", startPredictionLoop);
+      }
     };
     
     initialize();
@@ -260,18 +294,7 @@ export const useFaceExpressions = ({
           faceLandmarkerRef.current = null;
       }
     };
-  }, [videoRef, canvasRef]);
-
-  useEffect(() => {
-    // Log only when there's a detected expression to avoid flooding the console
-    if (analysis.dominantExpression !== 'Neutral' || analysis.activeExpressions.length > 0) {
-      console.log('Expression Analysis:', {
-        dominant: analysis.dominantExpression,
-        active: analysis.activeExpressions,
-        scores: analysis.expressions,
-      });
-    }
-  }, [analysis]);
+  }, [isReady, videoRef, canvasRef]);
 
   return analysis;
 }; 
