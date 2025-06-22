@@ -40,6 +40,11 @@ export const useAssemblyAITranscriber = ({
   const [confidence, setConfidence] = useState(0.5);
   const [talkingSpeed, setTalkingSpeed] = useState(150);
   const [clarity, setClarity] = useState(0.5);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+
+  const lowConfidenceTimer = useRef<NodeJS.Timeout | null>(null);
+  const lowClarityTimer = useRef<NodeJS.Timeout | null>(null);
+  const talkingSpeedTimer = useRef<NodeJS.Timeout | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -73,27 +78,84 @@ export const useAssemblyAITranscriber = ({
     isReadyRef.current = isReady;
   }, [isReady]);
 
+  const clearTimer = (timerRef: React.MutableRefObject<NodeJS.Timeout | null>) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const startWarningTimer = (
+    timerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+    message: string
+  ) => {
+    if (!timerRef.current) {
+      timerRef.current = setTimeout(() => {
+        setWarningMessage(message);
+      }, 3000); // 3 seconds
+    }
+  };
+
+  useEffect(() => {
+    const lowConfidenceMessage = "Your confidence seems low. Try speaking up.";
+    const lowClarityMessage = "Your speech seems unclear. Try to articulate more.";
+    const slowSpeedMessage = "You are speaking a bit slow. Try to speed up slightly.";
+    const fastSpeedMessage = "You are speaking a bit fast. Try to slow down.";
+
+    // Confidence warning logic
+    if (confidence > 0 && confidence < 0.3) {
+      startWarningTimer(lowConfidenceTimer, lowConfidenceMessage);
+    } else if (confidence >= 0.3) {
+      clearTimer(lowConfidenceTimer);
+      if (warningMessage === lowConfidenceMessage) setWarningMessage(null);
+    }
+
+    // Clarity warning logic
+    if (clarity > 0 && clarity < 0.3) {
+      startWarningTimer(lowClarityTimer, lowClarityMessage);
+    } else if (clarity >= 0.3) {
+      clearTimer(lowClarityTimer);
+      if (warningMessage === lowClarityMessage) setWarningMessage(null);
+    }
+
+    // Talking speed warning logic
+    if (talkingSpeed > 0 && talkingSpeed < 110) {
+      startWarningTimer(talkingSpeedTimer, slowSpeedMessage);
+    } else if (talkingSpeed > 190) {
+      startWarningTimer(talkingSpeedTimer, fastSpeedMessage);
+    } else if (talkingSpeed >= 110 && talkingSpeed <= 190) {
+      // Only clear timer and message if speed is in the good range
+      clearTimer(talkingSpeedTimer);
+      if (warningMessage === slowSpeedMessage || warningMessage === fastSpeedMessage) {
+        setWarningMessage(null);
+      }
+    }
+    
+    return () => {
+      clearTimer(lowConfidenceTimer);
+      clearTimer(lowClarityTimer);
+      clearTimer(talkingSpeedTimer);
+    };
+  }, [confidence, clarity, talkingSpeed, warningMessage]);
+
   const transcriberRef = useRef<RealtimeTranscriber | null>(null);
   const microphoneStreamRef = useRef<MediaStream | null>(null);
   const processorNodeRef = useRef<AudioWorkletNode | null>(null);
   const isSettingUp = useRef(false);
 
   const setup = useCallback(async (mediaStream: MediaStream) => {
-    return new Promise<void>(async (resolve, reject) => {
       if (transcriberRef.current || isSettingUp.current) {
           console.log("[AssemblyAI] Setup already in progress or completed.");
-          return resolve();
+          return;
       }
       console.log("[AssemblyAI] Setup function called.");
-      isSettingUp.current = true;
-      
       try {
         console.log("[AssemblyAI] Setting up transcriber...");
         console.log("[AssemblyAI] Fetching token from /api/assemblyai-token...");
         const response = await fetch("/api/assemblyai-token");
         console.log(`[AssemblyAI] Token response received. Status: ${response.status}`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch AssemblyAI token. Status: ${response.status}`);
+          throw new Error(`Failed to fetch AssemblyAI token. Status: ${response.status}`);
         }
         const data = await response.json();
 
@@ -108,7 +170,6 @@ export const useAssemblyAITranscriber = ({
           console.log('[AssemblyAI] Connection opened:', info);
           setIsConnected(true);
           setIsReady(true);
-          resolve(); 
         });
 
         newTranscriber.on('transcript', (transcript) => {
@@ -207,7 +268,6 @@ export const useAssemblyAITranscriber = ({
           console.error('AssemblyAI Error:', error);
           onErrorRef.current?.(error);
           stop(); 
-          reject(error); 
         });
 
         newTranscriber.on('close', (code, reason) => {
@@ -281,61 +341,58 @@ export const useAssemblyAITranscriber = ({
       } catch (err) {
         console.error("Error during AssemblyAI setup:", err);
         if (onErrorRef.current) onErrorRef.current(err as Error);
-        reject(err);
       } finally {
         isSettingUp.current = false;
       }
-    });
-  }, []); // REMOVED isReady from dependency array
+  }, []);
 
   const start = useCallback(() => {
-    if (transcriberRef.current) {
-      console.log("[AssemblyAI] Starting transcription (AudioWorklet is already running).");
-      setIsRecording(true);
+    if (!isReady || isRecording) {
+      return;
+    }
+    console.log('[AssemblyAI] Starting transcription...');
+    if (audioContextRef.current && processorNodeRef.current && audioSourceRef.current) {
+        audioSourceRef.current.connect(processorNodeRef.current);
+        processorNodeRef.current.connect(audioContextRef.current.destination); // Required for some browsers
+        setIsRecording(true);
     } else {
-      console.warn("[AssemblyAI] Cannot start. Transcriber not set up.");
+        console.error('[AssemblyAI] Audio processing components not ready.');
     }
-  }, []);
+  }, [isReady, isRecording]);
 
-  const stop = useCallback(async () => {
-    console.log("[AssemblyAI] Stop function called.");
-    setIsRecording(false);
-    
-    if (transcriberRef.current) {
-        console.log("[AssemblyAI] Closing and nullifying transcriber.");
-        await transcriberRef.current.close();
-        transcriberRef.current = null;
+  const stop = useCallback(() => {
+    if (!isRecording) {
+      return;
     }
-
-    if (processorNodeRef.current) {
-        processorNodeRef.current.disconnect();
-        processorNodeRef.current = null;
-    }
-
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        await audioContextRef.current.close();
-        audioContextRef.current = null;
-    }
-    
-    microphoneStreamRef.current = null;
-    isSettingUp.current = false;
-    setIsReady(false);
-    setIsConnected(false);
-
-    if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
-    }
-    if (audioSourceRef.current) {
+    console.log('[AssemblyAI] Stopping transcription...');
+    if (audioSourceRef.current && processorNodeRef.current) {
         audioSourceRef.current.disconnect();
-        audioSourceRef.current = null;
     }
-    setVolume(0);
+    setIsRecording(false);
+  }, [isRecording]);
 
-    if (wpmDecayTimerRef.current) {
-      clearInterval(wpmDecayTimerRef.current);
-    }
+  const onCloseWarning = () => {
+    setWarningMessage(null);
+    // Potentially add logic to suppress this specific warning for a while
+  };
+
+  useEffect(() => {
+    return () => {
+      transcriberRef.current?.close();
+      audioContextRef.current?.close();
+    };
   }, []);
 
-  return { isReady, isRecording, isConnected, confidence, talkingSpeed, clarity, setup, start, stop };
+  return {
+    isReady,
+    isRecording,
+    setup,
+    start,
+    stop,
+    confidence,
+    talkingSpeed,
+    clarity,
+    warningMessage,
+    onCloseWarning,
+  };
 }; 

@@ -5,9 +5,10 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFaceExpressions } from '@/hooks/useFaceExpressions';
 import { useAssemblyAITranscriber } from '@/hooks/useAssemblyAITranscriber';
 import { Button } from '@/components/ui/button';
-import { Camera, CameraOff, Mic, MicOff } from 'lucide-react';
+import { Camera, CameraOff, Mic, MicOff, Video, VideoOff, Phone, Settings, MessageSquare, Maximize, CornerRightUp } from 'lucide-react';
 import { DailyCall, DailyCallHandle } from '@/components/daily-call';
 import MetricBar from '@/components/MetricBar';
+import { FeedbackWarning } from '@/components/FeedbackWarning';
 
 const DynamicDailyCall = dynamic(
   () => import('@/components/daily-call').then(mod => mod.DailyCall),
@@ -17,12 +18,17 @@ const DynamicDailyCall = dynamic(
   }
 );
 
+type ActiveView = 'camera' | 'screen';
+
 export default function LiveMeetingPage() {
   const [fullTranscript, setFullTranscript] = useState("");
   const [currentUtterance, setCurrentUtterance] = useState("");
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [isReadyForAnalysis, setIsReadyForAnalysis] = useState(false);
-  const [showMesh, setShowMesh] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [showMesh, setShowMesh] = useState(true);
+  const [activeView, setActiveView] = useState<ActiveView>('camera');
   const [permissionError, setPermissionError] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -46,6 +52,8 @@ export default function LiveMeetingPage() {
     confidence,
     talkingSpeed,
     clarity,
+    warningMessage,
+    onCloseWarning,
   } = useAssemblyAITranscriber({
     onTranscript: handleTranscript
   });
@@ -54,14 +62,9 @@ export default function LiveMeetingPage() {
     console.log("[LiveMeetingPage] Participant updated:", event);
     const participant = event.participant;
     if (participant.local) {
-      const isMicCurrentlyOn = participant.audio;
-      if (isMicCurrentlyOn) {
-        startTranscribing();
-      } else {
-        stopTranscribing();
-      }
+      setIsMicOn(participant.audio);
     }
-  }, [startTranscribing, stopTranscribing]);
+  }, []);
 
   useEffect(() => {
     const getMedia = async () => {
@@ -109,6 +112,15 @@ export default function LiveMeetingPage() {
     };
     setup();
   }, [mediaStream, isTranscriberReady, setupTranscriber]);
+
+  // Effect to control transcription based on mic status and transcriber readiness
+  useEffect(() => {
+    if (isTranscriberReady && isMicOn) {
+      startTranscribing();
+    } else {
+      stopTranscribing();
+    }
+  }, [isTranscriberReady, isMicOn, startTranscribing, stopTranscribing]);
   
   // Cleanup effect
   useEffect(() => {
@@ -127,9 +139,9 @@ export default function LiveMeetingPage() {
 
   const getTalkingSpeedLabel = (speed: number) => {
     if (speed === 0) return '';
-    if (speed < 110) return 'TOO SLOW';
-    if (speed > 190) return 'TOO FAST';
-    if (speed >= 130 && speed <= 170) return 'GOOD SPEED';
+    if (speed < 120) return 'TOO SLOW';
+    if (speed > 350) return 'TOO FAST';
+    if (speed >= 140 && speed <= 250) return 'GOOD SPEED';
     return 'OK';
   };
 
@@ -141,7 +153,7 @@ export default function LiveMeetingPage() {
   };
 
   const confidenceGradient = 'linear-gradient(to right, #ef4444, #f59e0b 40%, #22c55e 70%)';
-  const talkingSpeedGradient = 'linear-gradient(to right, #ef4444 0%, #f59e0b 30%, #22c55e 40%, #22c55e 60%, #f59e0b 70%, #ef4444 100%)';
+  const talkingSpeedGradient = 'linear-gradient(to right, #ef4444, #f59e0b 40%, #22c55e 70%)';
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
@@ -149,73 +161,75 @@ export default function LiveMeetingPage() {
       
       <div className="flex-1 flex flex-col p-4 gap-4">
         <h1 className="text-2xl font-bold">Live Coaching Session</h1>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden flex flex-col">
-            <canvas ref={canvasRef} className="absolute z-10 pointer-events-none"></canvas>
-            
-            <div className="flex-1 w-full h-full">
-              {mediaStream ? (
-                <DailyCall 
-                  ref={dailyCallRef}
-                  mediaStream={mediaStream}
-                  onParticipantUpdated={handleParticipantUpdate}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-center p-4">
-                  {permissionError ? (
-                    <p className="text-red-400">{permissionError}</p>
-                  ) : (
-                    <p>Waiting for camera permissions...</p>
-                  )}
-                </div>
-              )}
+        
+        <div className="flex-1 grid grid-rows-3 gap-4">
+          <div className="row-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 w-full h-full bg-black rounded-lg relative overflow-hidden flex flex-col">
+              <canvas ref={canvasRef} className="absolute z-10 pointer-events-none"></canvas>
+              
+              <div className="flex-1 w-full h-full relative">
+                <FeedbackWarning message={warningMessage} onClose={onCloseWarning} />
+                {mediaStream ? (
+                  <DailyCall 
+                    ref={dailyCallRef}
+                    mediaStream={mediaStream}
+                    onParticipantUpdated={handleParticipantUpdate}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-center p-4">
+                    {permissionError ? (
+                      <p className="text-red-400">{permissionError}</p>
+                    ) : (
+                      <p>Waiting for camera permissions...</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="w-full h-full flex flex-col gap-4">
+              <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col h-1/2">
+                  <h2 className="text-xl font-bold mb-4">Real-time Feedback</h2>
+                  <div className="flex-1 space-y-4 overflow-y-auto pr-2 flex flex-col justify-around">
+                      <MetricBar 
+                        label="Confidence"
+                        value={confidence}
+                        min={0}
+                        max={1}
+                        gradient={confidenceGradient}
+                        unit="%"
+                        valueLabel={getConfidenceLabel(confidence)}
+                      />
+                      <MetricBar 
+                        label="Clarity"
+                        value={clarity}
+                        min={0}
+                        max={1}
+                        gradient={confidenceGradient}
+                        unit="%"
+                        valueLabel={getConfidenceLabel(clarity)}
+                      />
+                      <MetricBar 
+                        label="Talking Speed"
+                        value={talkingSpeed}
+                        min={50}
+                        max={400}
+                        gradient={talkingSpeedGradient}
+                        unit="wpm"
+                        valueLabel={getTalkingSpeedLabel(talkingSpeed)}
+                      />
+                  </div>
+              </div>
+              <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col h-1/2">
+                  <h2 className="text-xl font-bold mb-4">Live Transcript</h2>
+                  <div className="flex-1 overflow-y-auto text-gray-300">
+                    <span>{fullTranscript}</span>
+                    <span className="text-white">{currentUtterance}</span>
+                    {!fullTranscript && !currentUtterance && "Transcript will appear here..."}
+                  </div>
+              </div>
             </div>
           </div>
-          <div className="w-full h-full flex flex-col gap-4">
-            <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col h-1/2">
-                <h2 className="text-xl font-bold mb-4">Real-time Feedback</h2>
-                <div className="flex-1 space-y-4 overflow-y-auto pr-2 flex flex-col justify-around">
-                    <MetricBar 
-                      label="Confidence"
-                      value={confidence}
-                      min={0}
-                      max={1}
-                      gradient={confidenceGradient}
-                      unit="%"
-                      valueLabel={getConfidenceLabel(confidence)}
-                    />
-                    <MetricBar 
-                      label="Clarity"
-                      value={clarity}
-                      min={0}
-                      max={1}
-                      gradient={confidenceGradient}
-                      unit="%"
-                      valueLabel={getConfidenceLabel(clarity)}
-                    />
-                    <MetricBar 
-                      label="Talking Speed"
-                      value={talkingSpeed}
-                      min={50}
-                      max={250}
-                      gradient={talkingSpeedGradient}
-                      unit="wpm"
-                      valueLabel={getTalkingSpeedLabel(talkingSpeed)}
-                    />
-                </div>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col h-1/2">
-                <h2 className="text-xl font-bold mb-4">Live Transcript</h2>
-                <div className="flex-1 overflow-y-auto text-gray-300">
-                  <span>{fullTranscript}</span>
-                  <span className="text-white">{currentUtterance}</span>
-                  {!fullTranscript && !currentUtterance && "Transcript will appear here..."}
-                </div>
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-48">
-          <div className="md:col-span-3 bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
+          <div className="row-span-1 bg-[#1a1a1a] rounded-lg p-4 flex flex-col">
             <div className="flex justify-between items-start">
               <h3 className="text-lg font-bold mb-2">Expression Analysis</h3>
               <Button onClick={() => setShowMesh(!showMesh)} variant="outline" size="sm">
