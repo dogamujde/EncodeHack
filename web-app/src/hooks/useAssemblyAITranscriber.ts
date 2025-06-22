@@ -42,6 +42,7 @@ export const useAssemblyAITranscriber = ({
   const [clarity, setClarity] = useState(0.5);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
+  const smoothedConfidenceRef = useRef(0.5);
   const lowConfidenceTimer = useRef<NodeJS.Timeout | null>(null);
   const lowClarityTimer = useRef<NodeJS.Timeout | null>(null);
   const talkingSpeedTimer = useRef<NodeJS.Timeout | null>(null);
@@ -192,7 +193,7 @@ export const useAssemblyAITranscriber = ({
               const remappedConfidence = Math.pow(confidence, 0.5);
               
               // New clarity logic: Confidence baseline with penalties.
-              const volumeModifier = 1 - Math.max(0, (0.4 - volume / 0.2) / 0.4) * 0.1;
+              const volumeModifier = 1 - Math.max(0, (0.4 - volume / 0.02) / 0.4) * 0.1;
               const articulationModifier = 1 - (1 - articulationScore) * 0.2;
               const rawClarity = remappedConfidence * volumeModifier * articulationModifier;
               
@@ -228,10 +229,11 @@ export const useAssemblyAITranscriber = ({
               }
 
               const getSpeedScore = (wpm: number) => {
-                  if (wpm < 110 || wpm > 190) return 0.2;
-                  if (wpm >= 130 && wpm <= 170) return 1.0;
-                  if (wpm < 130) return 0.2 + 0.8 * ((wpm - 110) / 20);
-                  return 0.2 + 0.8 * ((190 - wpm) / 20);
+                  const minWpm = 120;
+                  const optimalWpm = 180;
+                  if (wpm <= minWpm) return 0;
+                  if (wpm >= optimalWpm) return 1.0;
+                  return (wpm - minWpm) / (optimalWpm - minWpm);
               };
               const speedScore = getSpeedScore(smoothedWpmRef.current);
               const fillerWords = /\b(uh|um|er|ah|like|so|you know|basically|actually)\b/gi;
@@ -239,13 +241,16 @@ export const useAssemblyAITranscriber = ({
               const fillerCount = (transcript.text.match(fillerWords) || []).length;
               const fillerRatio = wordsInTranscript.length > 0 ? fillerCount / wordsInTranscript.length : 0;
               const fillerScore = Math.max(0, 1 - (fillerRatio * 4));
-              const userConfidence = 
-                  (volume / 0.2 * 0.5) +
-                  (speedScore * 0.1) +
-                  (fillerScore * 0.3) +
-                  (confidence * 0.1);
               
-              setConfidence(Math.min(1, userConfidence));
+              // Apply a non-linear scale to volume to make it more responsive
+              const normalizedVolume = Math.min(1, volume / 0.05); // Assume 0.05 is a good RMS volume
+              const rawConfidence = (normalizedVolume * 0.2) + (speedScore * 0.8);
+
+              // Smooth the final confidence score
+              const confidenceSmoothing = 0.1;
+              smoothedConfidenceRef.current = (rawConfidence * confidenceSmoothing) + (smoothedConfidenceRef.current * (1 - confidenceSmoothing));
+              
+              setConfidence(smoothedConfidenceRef.current);
             }
           }
 
