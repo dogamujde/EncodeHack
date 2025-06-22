@@ -36,10 +36,21 @@ export const useAssemblyAITranscriber = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
-  // States for real-time metrics
-  const [confidence, setConfidence] = useState(0);
-  const [talkingSpeed, setTalkingSpeed] = useState(0);
-  const [clarity, setClarity] = useState(0);
+  const [volume, setVolume] = useState(0);
+  const [confidence, setConfidence] = useState(0.5);
+  const [talkingSpeed, setTalkingSpeed] = useState(150);
+  const [clarity, setClarity] = useState(0.5);
+
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const audioDataArrayRef = useRef<Uint8Array | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+
+  const smoothedClarityRef = useRef(0.5);
+  const smoothedWpmRef = useRef(150);
+  const wpmDecayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const wordHistoryRef = useRef<{ start: number; end: number }[]>([]);
 
   const onTranscriptRef = useRef(onTranscript);
   const onErrorRef = useRef(onError);
@@ -63,7 +74,6 @@ export const useAssemblyAITranscriber = ({
   }, [isReady]);
 
   const transcriberRef = useRef<RealtimeTranscriber | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const microphoneStreamRef = useRef<MediaStream | null>(null);
   const processorNodeRef = useRef<AudioWorkletNode | null>(null);
   const isSettingUp = useRef(false);
@@ -104,21 +114,92 @@ export const useAssemblyAITranscriber = ({
         newTranscriber.on('transcript', (transcript) => {
           onTranscriptRef.current(transcript);
 
-          // Update metrics based on transcript data
-          if (transcript.message_type === 'PartialTranscript' || transcript.message_type === 'FinalTranscript') {
-            setConfidence(transcript.confidence ?? 0);
-            setClarity(transcript.confidence ?? 0); // Use confidence as a proxy for clarity
+          if (wpmDecayTimerRef.current) {
+            clearInterval(wpmDecayTimerRef.current);
+            wpmDecayTimerRef.current = null;
+          }
 
-            if (transcript.words && transcript.words.length > 0) {
-              const words = transcript.words;
-              const firstWord = words[0];
-              const lastWord = words[words.length - 1];
-              const duration = (lastWord.end - firstWord.start) / 1000; // in seconds
-              if (duration > 0) {
-                const wpm = (words.length / duration) * 60;
-                setTalkingSpeed(wpm);
+          // Update metrics based on transcript data, only if there's text
+          if (transcript.text && transcript.text.trim() !== '') {
+            if (transcript.message_type === 'PartialTranscript' || transcript.message_type === 'FinalTranscript') {
+              const totalTextDuration = transcript.text.split(/\s+/).length * 100; // Assuming average word duration of 100ms
+              const totalWordDuration = transcript.words.reduce((total, word) => total + (word.end - word.start), 0);
+              const totalGapDuration = Math.max(0, totalWordDuration - totalTextDuration);
+              const articulationScore = Math.min(1, totalGapDuration / (totalWordDuration * 0.4));
+
+              const confidence = transcript.confidence ?? 0;
+              const remappedConfidence = Math.pow(confidence, 0.5);
+              
+              // New clarity logic: Confidence baseline with penalties.
+              const volumeModifier = 1 - Math.max(0, (0.4 - volume / 0.2) / 0.4) * 0.1;
+              const articulationModifier = 1 - (1 - articulationScore) * 0.2;
+              const rawClarity = remappedConfidence * volumeModifier * articulationModifier;
+              
+              const claritySmoothingUp = 0.1;
+              const claritySmoothingDown = 0.3;
+              const claritySmoothing = rawClarity < smoothedClarityRef.current ? claritySmoothingDown : claritySmoothingUp;
+
+              smoothedClarityRef.current = (rawClarity * claritySmoothing) + (smoothedClarityRef.current * (1 - claritySmoothing));
+              setClarity(smoothedClarityRef.current);
+
+              if (transcript.words && transcript.words.length > 0) {
+                const newWords = transcript.words.filter(newWord => 
+                  !wordHistoryRef.current.some(existingWord => existingWord.start === newWord.start)
+                );
+
+                if (newWords.length > 0) {
+                    wordHistoryRef.current.push(...newWords);
+                }
+
+                const now = newWords.length > 0 ? newWords[newWords.length - 1].end : (wordHistoryRef.current.length > 0 ? wordHistoryRef.current[wordHistoryRef.current.length - 1].end : 0);
+                const fourSecondsAgo = now - 4000;
+                wordHistoryRef.current = wordHistoryRef.current.filter(word => word.end > fourSecondsAgo);
+
+                if (wordHistoryRef.current.length > 0) {
+                    const windowDuration = (now - wordHistoryRef.current[0].start) / 1000;
+                    if (windowDuration > 1) { // Only calculate if we have a meaningful window
+                        const rawWpm = (wordHistoryRef.current.length / windowDuration) * 60;
+                        const wpmSmoothing = 0.3;
+                        smoothedWpmRef.current = (rawWpm * wpmSmoothing) + (smoothedWpmRef.current * (1 - wpmSmoothing));
+                        setTalkingSpeed(smoothedWpmRef.current);
+                    }
+                }
               }
+
+              const getSpeedScore = (wpm: number) => {
+                  if (wpm < 110 || wpm > 190) return 0.2;
+                  if (wpm >= 130 && wpm <= 170) return 1.0;
+                  if (wpm < 130) return 0.2 + 0.8 * ((wpm - 110) / 20);
+                  return 0.2 + 0.8 * ((190 - wpm) / 20);
+              };
+              const speedScore = getSpeedScore(smoothedWpmRef.current);
+              const fillerWords = /\b(uh|um|er|ah|like|so|you know|basically|actually)\b/gi;
+              const wordsInTranscript = transcript.text.split(/\s+/);
+              const fillerCount = (transcript.text.match(fillerWords) || []).length;
+              const fillerRatio = wordsInTranscript.length > 0 ? fillerCount / wordsInTranscript.length : 0;
+              const fillerScore = Math.max(0, 1 - (fillerRatio * 4));
+              const userConfidence = 
+                  (volume / 0.2 * 0.5) +
+                  (speedScore * 0.1) +
+                  (fillerScore * 0.3) +
+                  (confidence * 0.1);
+              
+              setConfidence(Math.min(1, userConfidence));
             }
+          }
+
+          if (transcript.message_type === 'FinalTranscript') {
+            wpmDecayTimerRef.current = setInterval(() => {
+              setTalkingSpeed(prev => {
+                const newSpeed = prev * 0.9; // Decay by 10%
+                if (newSpeed < 1) {
+                  if (wpmDecayTimerRef.current) clearInterval(wpmDecayTimerRef.current);
+                  wordHistoryRef.current = []; // Clear history on decay completion
+                  return 0;
+                }
+                return newSpeed;
+              });
+            }, 150);
           }
         });
 
@@ -173,6 +254,30 @@ export const useAssemblyAITranscriber = ({
         
         source.connect(processorNode);
         processorNode.connect(audioContextRef.current.destination);
+
+        const analyser = audioContextRef.current.createAnalyser();
+        analyser.fftSize = 256;
+        analyserRef.current = analyser;
+
+        const bufferLength = analyser.frequencyBinCount;
+        audioDataArrayRef.current = new Uint8Array(bufferLength);
+        
+        source.connect(analyser);
+
+        const analyseVolume = () => {
+            if (analyserRef.current && audioDataArrayRef.current) {
+                analyserRef.current.getByteTimeDomainData(audioDataArrayRef.current);
+                let sumSquares = 0.0;
+                for (const amplitude of audioDataArrayRef.current) {
+                    const normalized = (amplitude / 128.0) - 1.0;
+                    sumSquares += normalized * normalized;
+                }
+                const rms = Math.sqrt(sumSquares / audioDataArrayRef.current.length);
+                setVolume(rms);
+            }
+            animationFrameIdRef.current = requestAnimationFrame(analyseVolume);
+        };
+        analyseVolume();
       } catch (err) {
         console.error("Error during AssemblyAI setup:", err);
         if (onErrorRef.current) onErrorRef.current(err as Error);
@@ -216,6 +321,20 @@ export const useAssemblyAITranscriber = ({
     isSettingUp.current = false;
     setIsReady(false);
     setIsConnected(false);
+
+    if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+    }
+    if (audioSourceRef.current) {
+        audioSourceRef.current.disconnect();
+        audioSourceRef.current = null;
+    }
+    setVolume(0);
+
+    if (wpmDecayTimerRef.current) {
+      clearInterval(wpmDecayTimerRef.current);
+    }
   }, []);
 
   return { isReady, isRecording, isConnected, confidence, talkingSpeed, clarity, setup, start, stop };
