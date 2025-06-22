@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Live Coaching Transcription</title>
+    <title>Real-time Reflectly Transcription</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -234,65 +235,69 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎤 Real-time Live Coaching Transcription</h1>
-        
-        <div class="config">
-            <h3>⚙️ Configuration</h3>
-            <input type="password" id="apiKey" placeholder="Enter your AssemblyAI API Key" />
-            <small>Your API key is stored locally and never sent to any server except AssemblyAI.</small>
-        </div>
-        
-        <div class="status disconnected" id="status">
-            🔌 Disconnected - Enter API key and click Connect
-        </div>
-        
-        <div class="controls">
-            <button class="start-btn" id="connectBtn" onclick="connectWebSocket()">
-                🔌 Connect to AssemblyAI
-            </button>
-            <button class="start-btn" id="startBtn" onclick="startRecording()" disabled>
-                🎤 Start Recording
-            </button>
-            <button class="stop-btn" id="stopBtn" onclick="stopRecording()" disabled>
-                🛑 Stop Recording
-            </button>
-            <button class="clear-btn" id="clearBtn" onclick="clearTranscripts()">
-                🗑️ Clear Transcripts
-            </button>
-        </div>
-        
-        <div class="audio-visualizer" id="visualizer">
-            <div class="visualizer-info">🎵 Audio Visualizer (Start recording to see audio levels)</div>
-        </div>
-        
-        <div class="transcripts" id="transcripts">
-            <div style="text-align: center; opacity: 0.6; padding: 40px;">
-                📝 Transcripts will appear here when you start recording...
+        <header>
+            <h1>🎤 Real-time Reflectly Transcription</h1>
+            <p>Powered by AssemblyAI</p>
+        </header>
+        <main>
+            <div class="config">
+                <h3>⚙️ Configuration</h3>
+                <input type="password" id="apiKey" placeholder="Enter your AssemblyAI API Key" />
+                <small>Your API key is stored locally and never sent to any server except AssemblyAI.</small>
             </div>
-        </div>
-        
-        <div class="analysis">
-            <div class="analysis-card">
-                <h3>📊 Total Transcripts</h3>
-                <div class="analysis-value" id="totalCount">0</div>
-                <small>Partial + Final</small>
+            
+            <div class="status disconnected" id="status">
+                🔌 Disconnected - Enter API key and click Connect
             </div>
-            <div class="analysis-card">
-                <h3>✅ Final Transcripts</h3>
-                <div class="analysis-value" id="finalCount">0</div>
-                <small>Completed phrases</small>
+            
+            <div class="controls">
+                <button class="start-btn" id="connectBtn" onclick="connectWebSocket()">
+                    🔌 Connect to AssemblyAI
+                </button>
+                <button class="start-btn" id="startBtn" onclick="startRecording()" disabled>
+                    🎤 Start Recording
+                </button>
+                <button class="stop-btn" id="stopBtn" onclick="stopRecording()" disabled>
+                    🛑 Stop Recording
+                </button>
+                <button class="clear-btn" id="clearBtn" onclick="clearTranscripts()">
+                    🗑️ Clear Transcripts
+                </button>
             </div>
-            <div class="analysis-card">
-                <h3>💪 Avg Confidence</h3>
-                <div class="analysis-value" id="avgConfidence">0%</div>
-                <small>Transcription accuracy</small>
+            
+            <div class="audio-visualizer" id="visualizer">
+                <div class="visualizer-info">🎵 Audio Visualizer (Start recording to see audio levels)</div>
             </div>
-            <div class="analysis-card">
-                <h3>⏱️ Session Time</h3>
-                <div class="analysis-value" id="sessionTime">00:00</div>
-                <small>Recording duration</small>
+            
+            <div class="transcripts" id="transcripts">
+                <div style="text-align: center; opacity: 0.6; padding: 40px;">
+                    📝 Transcripts will appear here when you start recording...
+                </div>
             </div>
-        </div>
+            
+            <div class="analysis">
+                <div class="analysis-card">
+                    <h3>📊 Total Transcripts</h3>
+                    <div class="analysis-value" id="totalCount">0</div>
+                    <small>Partial + Final</small>
+                </div>
+                <div class="analysis-card">
+                    <h3>✅ Final Transcripts</h3>
+                    <div class="analysis-value" id="finalCount">0</div>
+                    <small>Completed phrases</small>
+                </div>
+                <div class="analysis-card">
+                    <h3>💪 Avg Confidence</h3>
+                    <div class="analysis-value" id="avgConfidence">0%</div>
+                    <small>Transcription accuracy</small>
+                </div>
+                <div class="analysis-card">
+                    <h3>⏱️ Session Time</h3>
+                    <div class="analysis-value" id="sessionTime">00:00</div>
+                    <small>Recording duration</small>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>

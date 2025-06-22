@@ -2,6 +2,7 @@ import { RealtimeMicrophoneTranscriber } from './realtimeMicrophoneNode';
 import { analyzeTranscriptSentiment } from './sentimentAnalysis';
 import { analyzeQuestionRatio } from './questionRatioAnalysis';
 import { analyzeOverlappingTimestamps } from './overlappingAnalysis';
+import { RealtimeTranscriber } from 'assemblyai';
 
 interface CoachingFeedback {
     type: 'sentiment' | 'question' | 'pace' | 'confidence' | 'engagement';
@@ -39,12 +40,14 @@ class LiveCoachingSystem {
         }
         
         const sessionId = `coaching_${sessionType}_${Date.now()}`;
-        console.log(`🎯 Starting Live Coaching Session: ${sessionId}`);
+        console.log(`🎯 Starting Reflectly Session: ${sessionId}`);
         console.log(`📝 Session Type: ${sessionType.toUpperCase()}`);
         console.log('='.repeat(50));
         
         // Initialize transcriber
-        const transcriber = new RealtimeMicrophoneTranscriber(this.apiKey);
+        const transcriber = new RealtimeTranscriber({
+            apiKey: this.apiKey,
+        });
         
         // Create session
         this.session = {
@@ -487,7 +490,7 @@ class LiveCoachingSystem {
 
 // Demo function
 async function runLiveCoachingDemo() {
-    console.log('🎯 Live Coaching System Demo');
+    console.log('🎯 Reflectly System Demo');
     console.log('============================');
     
     const apiKey = process.env.ASSEMBLYAI_API_KEY;
@@ -506,7 +509,7 @@ async function runLiveCoachingDemo() {
         process.on('SIGINT', async () => {
             console.log('\n\n🛑 Shutting down coaching session...');
             const reportFile = await coachingSystem.stopCoachingSession();
-            console.log('\n👋 Live coaching demo completed!');
+            console.log('\n👋 Reflectly demo completed!');
             if (reportFile) {
                 console.log(`📄 Full report available in: ${reportFile}`);
             }

@@ -1,5 +1,5 @@
 {
-  "name": "live-coach-full-stack",
+  "name": "reflectly",
   "version": "1.0.0",
   "description": "AI-powered interview analysis platform with web interface",
   "main": "web-app/src/app/page.tsx",

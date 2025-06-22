@@ -20,9 +20,12 @@ async function testTokenConnection() {
         console.log('\n🎉 SUCCESS! Token-based authentication is working!');
         console.log('✅ Real-time transcription is now functional');
         console.log('📝 You can now use the updated files:');
-        console.log('   • realtimeMicrophone.html (browser version)');
-        console.log('   • realtimeMicrophoneNode.ts (Node.js version)');
-        console.log('   • realtimeLiveCoachingDemo.ts (live coaching)');
+        console.log('   • realtimeDemo.ts (basic)');
+        console.log('   • realtimeMicrophone.ts (microphone)');
+        console.log('   • realtimeMicrophoneNode.ts (microphone in Node)');
+        console.log('   • realtimeLiveCoachingDemo.ts (real-time feedback)');
+        console.log('\nThese scripts will automatically use the temporary token.');
+        console.log('No need to set the ASSEMBLYAI_API_KEY environment variable.');
         
     } catch (error) {
         console.error('❌ Test failed:', error);

@@ -1,4 +1,4 @@
-# Live Coach + MCP ACI-VibeOps Integration Plan
+# Reflectly + MCP ACI-VibeOps Integration Plan
 
 ## 🎯 Project Transformation: CLI → Full-Stack SaaS
 

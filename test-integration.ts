@@ -1,11 +1,12 @@
 import { AIMonitorIntegration } from './src/aiMonitor';
 import { TranscriptionWithAIMonitoring } from './src/transcriptionWithAI';
 import dotenv from 'dotenv';
+import { track_agent_suggestion } from './agent_learning_system';
 
 dotenv.config();
 
 async function testVibeHackIntegration() {
-  console.log('🧪 Testing vibeHack Integration with Live Coach');
+  console.log('🧪 Testing vibeHack Integration with Reflectly');
   console.log('='.repeat(50));
 
   // Test 1: Basic AI Monitor Integration
@@ -32,7 +33,7 @@ async function testVibeHackIntegration() {
     // Test logging a suggestion
     const suggestionId = await aiMonitor.logAISuggestion(
       'Test integration',
-      'Testing vibeHack integration with Live Coach',
+      'Testing vibeHack integration with Reflectly',
       'console.log("Integration test");',
       'Integration test context'
     );
@@ -100,7 +101,7 @@ async function testVibeHackIntegration() {
     
     console.log('\n🎉 vibeHack Integration Test PASSED!');
     console.log('\n📋 Next steps:');
-    console.log('   1. Run "npm run dev" to start Live Coach with AI monitoring');
+    console.log('   1. Run "npm run dev" to start Reflectly with AI monitoring');
     console.log('   2. Run "npm run monitor:start" to start monitoring separately');
     console.log('   3. Use Cursor AI to generate code - it will be monitored automatically');
     console.log('   4. Check "npm run monitor:stats" for monitoring statistics');

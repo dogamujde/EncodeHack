@@ -61,7 +61,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log('🚀 Live Coach Server Started!');
+    console.log('🚀 Reflectly Server Started!');
     console.log('================================');
     console.log(`📡 Server running at: http://localhost:${PORT}`);
     console.log('🎤 Real-time transcription ready!');

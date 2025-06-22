@@ -4,8 +4,10 @@ import fs from 'fs';
 /**
  * Demo: Real-time Transcription Integration
  * 
- * This demonstrates how to use the RealtimeTranscriber class
- * in a real application for live coaching scenarios.
+ * This script is a demonstration of how to use the RealtimeTranscriber with a local file.
+ * It includes functionality for real-time transcription, speaker diarization,
+ * and sentiment analysis. This can be adapted for real-time microphone input
+ * in a real application for real-time feedback scenarios.
  */
 
 class LiveCoachingSession {
@@ -22,7 +24,7 @@ class LiveCoachingSession {
     this.sessionStartTime = new Date();
     this.transcriber = new RealtimeTranscriber();
     
-    console.log("🎯 Live Coaching Session Started");
+    console.log("🎯 Reflectly Session Started");
     console.log(`📅 Session Time: ${this.sessionStartTime.toISOString()}`);
   }
 
@@ -133,7 +135,7 @@ class LiveCoachingSession {
    * End the coaching session
    */
   public endSession(): void {
-    console.log("\n🛑 Ending live coaching session...");
+    console.log("\n🛑 Ending real-time feedback session...");
     this.saveSession();
     this.transcriber.close();
     console.log("✅ Session ended successfully");

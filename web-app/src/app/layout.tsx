@@ -6,8 +6,8 @@ import { AuthProvider } from "@/contexts/auth-context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ProductivAI - AI that thinks ahead of you",
-  description: "Transform your workflow with intelligent automation that learns from your habits and anticipates your needs.",
+  title: "Reflectly - Real-time Coaching",
+  description: "Get real-time feedback on your communication skills with Reflectly.",
 };
 
 export default function RootLayout({

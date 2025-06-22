@@ -63,7 +63,7 @@ ws.onopen = () => {
 - ✅ Gets token before connecting
 - ✅ Uses token-based WebSocket URL
 
-### Live Coaching: `realtimeLiveCoachingDemo.ts`
+### Reflectly: `realtimeLiveCoachingDemo.ts`
 - ✅ Automatically uses updated `realtimeMicrophoneNode.ts`
 - ✅ Full coaching system now functional
 
@@ -99,7 +99,7 @@ export ASSEMBLYAI_API_KEY=48d9e34327bb4f9f89442606b3439aa0
 # Run real-time transcription
 npx tsx realtimeMicrophoneNode.ts
 
-# Run live coaching system
+# Run Reflectly system
 npx tsx realtimeLiveCoachingDemo.ts
 ```
 
@@ -118,7 +118,7 @@ npx tsx testTokenConnection.ts
 ## 📊 Features Now Available
 
 - ✅ **Real-time Transcription**: Live speech-to-text from microphone
-- ✅ **Live Coaching**: AI-powered speaking feedback every 10 seconds
+- ✅ **Real-time Feedback**: AI-powered speaking feedback every 10 seconds
 - ✅ **Analytics Dashboard**: Confidence scores, word counts, session stats
 - ✅ **Audio Visualization**: Real-time audio waveform display
 - ✅ **Session Reports**: Comprehensive analysis and recommendations

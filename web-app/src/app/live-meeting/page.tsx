@@ -160,7 +160,7 @@ export default function LiveMeetingPage() {
       <video ref={videoRef} autoPlay playsInline muted className="hidden"></video>
       
       <div className="flex-1 flex flex-col p-4 gap-4">
-        <h1 className="text-2xl font-bold">Live Coaching Session</h1>
+        <h1 className="text-2xl font-bold">Reflectly Session</h1>
         
         <div className="flex-1 grid grid-rows-3 gap-4">
           <div className="row-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">

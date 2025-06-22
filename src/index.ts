@@ -4,11 +4,16 @@
 import './getAccessToken'; // This will execute the getAccessToken function
 import { AIMonitorIntegration } from './aiMonitor';
 import dotenv from 'dotenv';
+import express from 'express';
+import { track_agent_suggestion } from './agent_learning_system';
 
 // Load environment variables
 dotenv.config();
 
-console.log('🚀 Starting Live Coach application with AI monitoring...');
+console.log('🚀 Starting Reflectly application with AI monitoring...');
+
+const app = express();
+const port = 3000;
 
 // Initialize AI monitoring if API keys are available
 async function initializeAIMonitoring() {
@@ -36,7 +41,7 @@ async function initializeAIMonitoring() {
         // Log initial system startup
         await aiMonitor.logAISuggestion(
           'System startup',
-          'Live Coach application started with AI monitoring enabled',
+          'Reflectly application started with AI monitoring enabled',
           '',
           'Application initialization'
         );
@@ -108,7 +113,7 @@ async function main() {
     console.log('   npm run monitor:start  - Start AI monitoring');
     console.log('   npm run monitor:test   - Test monitoring system');
     console.log('   npm run monitor:stats  - Get monitoring statistics');
-    console.log('   npm run dev           - Run live-coach in development');
+    console.log('   npm run dev           - Run Reflectly in development');
     console.log('   npm run build         - Build the project');
     
   } catch (error) {

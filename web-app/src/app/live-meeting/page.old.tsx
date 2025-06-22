@@ -264,7 +264,7 @@ export default function LiveMeetingPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Live Coaching Session</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Reflectly Session</h1>
             <p className="text-gray-600 mt-1">Real-time feedback and transcription</p>
           </div>
           
@@ -355,7 +355,7 @@ export default function LiveMeetingPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <div className="coaching-status-dot active"></div>
-                    <span className="font-semibold text-blue-900">Live Coaching</span>
+                    <span className="font-semibold text-blue-900">Reflectly</span>
                   </div>
                   <Button
                     onClick={() => setLiveFeedback(null)}

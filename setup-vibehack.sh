@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Setting up vibeHack integration for Live Coach"
+echo "🚀 Setting up vibeHack integration for Reflectly"
 echo "================================================"
 
 # Check if Python is installed
@@ -56,12 +56,12 @@ echo "🎉 vibeHack integration setup complete!"
 echo ""
 echo "📋 Next steps:"
 echo "1. Edit vibeHack/.env with your API keys"
-echo "2. Run 'npm run dev' to start Live Coach with AI monitoring"
+echo "2. Run 'npm run dev' to start Reflectly with AI monitoring"
 echo "3. Run 'npm run monitor:start' to start AI monitoring separately"
 echo "4. Use 'npm run monitor:stats' to view monitoring statistics"
 echo ""
 echo "💡 Available commands:"
-echo "   npm run dev              - Start Live Coach with AI monitoring"
+echo "   npm run dev              - Start Reflectly with AI monitoring"
 echo "   npm run monitor:start    - Start AI monitoring system"
 echo "   npm run monitor:test     - Test monitoring system"
 echo "   npm run monitor:stats    - Get monitoring statistics"

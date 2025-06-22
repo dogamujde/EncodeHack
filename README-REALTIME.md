@@ -1,6 +1,67 @@
-# 🎤 Real-time Live Coaching Transcription
+# 🎤 Real-time Reflectly Transcription
 
-This project now includes real-time microphone transcription capabilities with live coaching analysis. You can capture audio from your microphone, send it to AssemblyAI for real-time transcription, and receive instant coaching feedback.
+This project now includes real-time microphone transcription capabilities with real-time feedback and analysis. You can capture audio from your microphone, send it to AssemblyAI for real-time transcription, and receive instant coaching feedback.
+
+## Features
+-   **Real-time Transcription**: Captures audio from your microphone and transcribes it in real-time.
+-   **Speaker Diarization**: Identifies different speakers in the audio stream.
+-   **Sentiment Analysis**: Analyzes the sentiment of the transcribed text.
+-   **Real-time Feedback**: Provides instant feedback on your speaking performance.
+-   **Token-based Authentication**: Uses temporary tokens for secure connection to AssemblyAI.
+
+### Real-time Feedback Analysis
+The system analyzes your speech and provides feedback on:
+-   **Pacing**: Are you speaking too fast or too slow?
+-   **Filler Words**: Are you using too many filler words like "um" or "uh"?
+-   **Sentiment**: What is the overall sentiment of your speech?
+
+## Demos
+-   **Basic Real-time Demo**: `realtimeDemo.ts`
+-   **Microphone Demo**: `realtimeMicrophone.ts` and `realtimeMicrophone.html`
+-   **Real-time Feedback System**: Complete coaching platform with feedback loops
+
+## How to Run
+
+### Prerequisites
+-   Node.js (v18 or higher)
+-   An AssemblyAI account and API key
+
+### Installation
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/dogamujde/EncodeHack.git
+    cd EncodeHack
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+### Running the Demos
+
+#### Basic Real-time Demo
+This demo transcribes a local audio file in real-time.
+```bash
+npx tsx realtimeDemo.ts
+```
+
+#### Real-time Feedback System
+This is the full real-time feedback system with advanced analysis.
+
+1.  **Run the real-time feedback demo**:
+    ```bash
+    npx tsx realtimeLiveCoachingDemo.ts
+    ```
+2.  This will start a session and provide real-time feedback on your speech.
+
+### Browser-based Demo
+The `realtimeMicrophone.html` file provides a browser-based demo that you can open directly.
+1.  Open `realtimeMicrophone.html` in your web browser.
+2.  Enter your AssemblyAI API key.
+3.  Click "Connect" and then "Start Recording".
+
+### Real-time Feedback Analysis
+The `realtimeLiveCoachingDemo.ts` script provides detailed analysis of your speech, including pacing, filler words, and sentiment. This analysis is printed to the console in real-time.
 
 ## 🌟 Features
 

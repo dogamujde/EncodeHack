@@ -1,6 +1,6 @@
-# vibeHack Integration with Live Coach
+# vibeHack Integration with Reflectly
 
-This document explains how to use the vibeHack AI monitoring system integrated into your Live Coach project.
+This document explains how to use the vibeHack AI monitoring system integrated into your Reflectly project.
 
 ## What is vibeHack?
 
@@ -26,7 +26,7 @@ vibeHack is an AI agent monitoring and learning system that:
    OPIK_API_KEY=your-opik-api-key-here
    ```
 
-3. **Start Live Coach with AI monitoring:**
+3. **Start Reflectly with AI monitoring:**
    ```bash
    npm run dev
    ```
@@ -35,7 +35,7 @@ vibeHack is an AI agent monitoring and learning system that:
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start Live Coach with AI monitoring enabled |
+| `npm run dev` | Start Reflectly with AI monitoring enabled |
 | `npm run monitor:start` | Start AI monitoring system separately |
 | `npm run monitor:test` | Test the monitoring system |
 | `npm run monitor:stats` | Get current monitoring statistics |
@@ -51,7 +51,7 @@ The vibeHack system automatically:
 4. **Generates cursor rules** from failed suggestions
 5. **Tracks success/failure rates** over time
 
-### Integration with Live Coach
+### Integration with Reflectly
 The integration provides:
 - **Transcript analysis monitoring** - Track AI suggestions for improving transcription
 - **Speaker analysis enhancements** - Monitor AI-generated speaker detection improvements
@@ -142,7 +142,7 @@ if (words.length === 0) {
 - **Learning system** - Continuously improving cursor rules
 - **Observability** - Complete visibility into AI interactions
 
-### For Live Coach Project
+### For Reflectly Project
 - **Enhanced transcription** - AI-monitored speaker analysis
 - **Quality assurance** - Automatic testing of AI-generated improvements
 - **Pattern recognition** - Learn from successful/failed approaches
@@ -182,7 +182,7 @@ if (words.length === 0) {
 ## Advanced Usage
 
 ### Custom Analysis Integration
-You can integrate vibeHack monitoring into any part of your Live Coach workflow:
+You can integrate vibeHack monitoring into any part of your Reflectly workflow:
 
 ```typescript
 // In your existing transcription functions
@@ -221,8 +221,8 @@ To extend the vibeHack integration:
 For issues with:
 - **Integration**: Check this README and troubleshooting section
 - **vibeHack core**: Check the `vibeHack/README.md` file
-- **Live Coach features**: See main project README
+- **Reflectly features**: See main project README
 
 ## License
 
-This integration maintains the same license as both the Live Coach project and vibeHack system. 
+This integration maintains the same license as both the Reflectly project and vibeHack system. 

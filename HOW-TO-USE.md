@@ -10,7 +10,7 @@ node server.js
 
 You should see:
 ```
-🚀 Live Coach Server Started!
+🚀 Reflectly Server Started!
 ================================
 📡 Server running at: http://localhost:3000
 🎤 Real-time transcription ready!
@@ -66,3 +66,20 @@ node server.js
 ---
 
 **That's it! Your real-time transcription should now work perfectly! 🎉** 
+
+## How to Run
+
+1.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+2.  **Start the server**:
+    ```bash
+    npm run dev
+    ```
+    You should see the following output:
+    ```
+    🚀 Reflectly Server Started!
+    ```
+3.  **Open the web interface**:
+    - Navigate to `http://localhost:3000` in your web browser. 
