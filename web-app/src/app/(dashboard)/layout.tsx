@@ -29,9 +29,9 @@ function SidebarContent({ onLogout, userEmail }: { onLogout: () => void; userEma
       {/* Logo */}
       <div className="flex items-center gap-3 p-6 border-b border-gray-800">
         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-sm">AI</span>
+          <span className="text-white font-bold text-sm">R</span>
         </div>
-        <span className="text-xl font-semibold text-white">ProductivAI</span>
+        <span className="text-xl font-semibold text-white">Reflectly</span>
       </div>
 
       {/* Navigation */}
@@ -136,7 +136,7 @@ export default function DashboardLayout({
           >
             <Menu className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-semibold text-white">ProductivAI</h1>
+          <h1 className="text-lg font-semibold text-white">Reflectly</h1>
           <div className="w-6" /> {/* Spacer */}
         </div>
         <main>{children}</main>
