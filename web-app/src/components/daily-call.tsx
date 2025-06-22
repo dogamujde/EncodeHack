@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import DailyIframe from '@daily-co/daily-js';
 
 interface DailyCallProps {
@@ -9,26 +9,48 @@ interface DailyCallProps {
   mediaStream: MediaStream;
   onJoinedMeeting?: () => void;
   onAudioTrackStarted?: (track: MediaStreamTrack) => void;
+  onParticipantUpdated?: (event: any) => void;
 }
 
-export const DailyCall: React.FC<DailyCallProps> = ({ 
+export interface DailyCallHandle {
+  toggleCamera: () => void;
+  toggleMic: () => void;
+}
+
+export const DailyCall = forwardRef<DailyCallHandle, DailyCallProps>(({ 
   onTranscript,
   onFeedback,
   mediaStream,
   onJoinedMeeting,
-  onAudioTrackStarted
-}) => {
+  onAudioTrackStarted,
+  onParticipantUpdated
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const callObjectRef = useRef<any>(null);
 
   // Store callbacks in refs to prevent useEffect from re-running
   const onJoinedMeetingRef = useRef(onJoinedMeeting);
-  const onAudioTrackStartedRef = useRef(onAudioTrackStarted);
+  const onParticipantUpdatedRef = useRef(onParticipantUpdated);
 
   useEffect(() => {
     onJoinedMeetingRef.current = onJoinedMeeting;
-    onAudioTrackStartedRef.current = onAudioTrackStarted;
+    onParticipantUpdatedRef.current = onParticipantUpdated;
   });
+  
+  useImperativeHandle(ref, () => ({
+    toggleCamera: () => {
+      if (callObjectRef.current) {
+        const currentVideoState = callObjectRef.current.localVideo();
+        callObjectRef.current.setLocalVideo(!currentVideoState);
+      }
+    },
+    toggleMic: () => {
+      if (callObjectRef.current) {
+        const currentAudioState = callObjectRef.current.localAudio();
+        callObjectRef.current.setLocalAudio(!currentAudioState);
+      }
+    }
+  }));
 
   useEffect(() => {
     if (!mediaStream || callObjectRef.current) {
@@ -54,12 +76,9 @@ export const DailyCall: React.FC<DailyCallProps> = ({
     const handleEvent = (event: any) => {
       console.log('[DailyCall] Received event:', event.action, event);
       switch (event.action) {
-        case 'track-started':
-          if (event.track.kind === 'audio' && onAudioTrackStartedRef.current) {
-            console.log('[DailyCall] Audio track started, calling onAudioTrackStarted.');
-            onAudioTrackStartedRef.current(event.track);
-          } else if (event.track.kind === 'video') {
-            console.log('[DailyCall] Video track started.');
+        case 'participant-updated':
+          if (event.participant.local) {
+            onParticipantUpdatedRef.current?.(event);
           }
           break;
         case 'error':
@@ -71,42 +90,36 @@ export const DailyCall: React.FC<DailyCallProps> = ({
     };
 
     callObject
-      .on('joined-meeting', handleEvent)
-      .on('participant-joined', handleEvent)
-      .on('participant-left', handleEvent)
-      .on('track-started', handleEvent)
+      .on('joined-meeting', () => {
+        console.log('[DailyCall] Successfully joined meeting. Setting input devices.');
+        onJoinedMeetingRef.current?.();
+        callObject.setInputDevicesAsync({
+          videoSource: mediaStream.getVideoTracks()[0],
+          audioSource: mediaStream.getAudioTracks()[0],
+        })
+        .then(() => {
+          console.log('[DailyCall] setInputDevicesAsync successful.');
+          // Set initial device states after joining
+          callObject.setLocalVideo(true);
+          callObject.setLocalAudio(true);
+        })
+        .catch(err => console.error("[DailyCall] setInputDevicesAsync failed:", err));
+      })
+      .on('participant-updated', handleEvent)
       .on('error', handleEvent);
 
     const roomURL = 'https://meetingbot.daily.co/coaching-room';
     
-    // Join the room with devices off, then we will enable them with our custom stream.
-    callObject.join({ 
-      url: roomURL,
-      startVideoOff: true,
-      startAudioOff: true,
-    })
+    callObject.join({ url: roomURL })
       .catch(err => console.error("[DailyCall] Failed to join Daily room:", err));
       
-    // Once we've joined, immediately set the input devices to our custom stream
-    callObject.once('joined-meeting', () => {
-      console.log('[DailyCall] Successfully joined meeting. Setting input devices.');
-      if (onJoinedMeetingRef.current) {
-        onJoinedMeetingRef.current();
-      }
-      callObject.setInputDevicesAsync({
-        videoSource: mediaStream.getVideoTracks()[0],
-        audioSource: mediaStream.getAudioTracks()[0],
-      })
-      .then(() => console.log('[DailyCall] setInputDevicesAsync successful.'))
-      .catch(err => console.error("[DailyCall] setInputDevicesAsync failed:", err));
-    });
-
     return () => {
-      // This cleanup runs only once on unmount
       callObjectRef.current?.destroy();
       callObjectRef.current = null;
     };
   }, [mediaStream]);
 
   return <div ref={containerRef} className="w-full h-full relative" />;
-};
+});
+
+DailyCall.displayName = 'DailyCall';
