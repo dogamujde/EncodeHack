@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@daily-co/daily-js": "^0.80.0",
+    "@daily-co/daily-react": "^0.22.0",
     "@types/form-data": "^2.2.1",
     "@types/ws": "^8.18.1",
     "assemblyai": "^4.13.3",

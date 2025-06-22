@@ -7,6 +7,7 @@ import { useAssemblyAITranscriber } from '@/hooks/useAssemblyAITranscriber';
 import { Button } from '@/components/ui/button';
 import { Camera, CameraOff, Mic, MicOff } from 'lucide-react';
 import { DailyCall, DailyCallHandle } from '@/components/daily-call';
+import MetricBar from '@/components/MetricBar';
 
 const DynamicDailyCall = dynamic(
   () => import('@/components/daily-call').then(mod => mod.DailyCall),
@@ -42,6 +43,9 @@ export default function LiveMeetingPage() {
     setup: setupTranscriber,
     start: startTranscribing,
     stop: stopTranscribing,
+    confidence,
+    talkingSpeed,
+    clarity,
   } = useAssemblyAITranscriber({
     onTranscript: handleTranscript
   });
@@ -121,6 +125,24 @@ export default function LiveMeetingPage() {
     showMesh,
   });
 
+  const getTalkingSpeedLabel = (speed: number) => {
+    if (speed === 0) return '';
+    if (speed < 110) return 'TOO SLOW';
+    if (speed > 190) return 'TOO FAST';
+    if (speed >= 130 && speed <= 170) return 'GOOD SPEED';
+    return 'OK';
+  };
+
+  const getConfidenceLabel = (confidence: number) => {
+    if (confidence === 0) return '';
+    if (confidence < 0.4) return 'LOW';
+    if (confidence < 0.7) return 'AVERAGE';
+    return 'HIGH';
+  };
+
+  const confidenceGradient = 'linear-gradient(to right, #ef4444, #f59e0b 40%, #22c55e 70%)';
+  const talkingSpeedGradient = 'linear-gradient(to right, #ef4444 0%, #f59e0b 30%, #22c55e 40%, #22c55e 60%, #f59e0b 70%, #ef4444 100%)';
+
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white">
       <video ref={videoRef} autoPlay playsInline muted className="hidden"></video>
@@ -150,10 +172,36 @@ export default function LiveMeetingPage() {
             </div>
           </div>
           <div className="w-full h-full flex flex-col gap-4">
-            <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col h-1/2">
+            <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col h-1/2">
                 <h2 className="text-xl font-bold mb-4">Real-time Feedback</h2>
-                <div className="flex-1 space-y-3 overflow-y-auto">
-                    <p className="text-gray-400 text-center pt-4">AI feedback will appear here...</p>
+                <div className="flex-1 space-y-4 overflow-y-auto pr-2 flex flex-col justify-around">
+                    <MetricBar 
+                      label="Confidence"
+                      value={confidence}
+                      min={0}
+                      max={1}
+                      gradient={confidenceGradient}
+                      unit="%"
+                      valueLabel={getConfidenceLabel(confidence)}
+                    />
+                    <MetricBar 
+                      label="Clarity"
+                      value={clarity}
+                      min={0}
+                      max={1}
+                      gradient={confidenceGradient}
+                      unit="%"
+                      valueLabel={getConfidenceLabel(clarity)}
+                    />
+                    <MetricBar 
+                      label="Talking Speed"
+                      value={talkingSpeed}
+                      min={50}
+                      max={250}
+                      gradient={talkingSpeedGradient}
+                      unit="wpm"
+                      valueLabel={getTalkingSpeedLabel(talkingSpeed)}
+                    />
                 </div>
             </div>
             <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col h-1/2">
@@ -183,13 +231,13 @@ export default function LiveMeetingPage() {
                   {Object.entries(expressionAnalysis.expressions)
                     .map(([expression, score]) => (
                     <li key={expression} className="flex items-center gap-2">
-                      <span className="w-32 truncate" title={expression}>
+                      <span className="w-28 truncate" title={expression}>
                         {expression}
                       </span>
                       <div className="flex-1 bg-gray-600 rounded-sm relative h-4 flex items-center">
                         <div className="h-full bg-teal-400 rounded-sm" style={{ width: `${score * 100}%` }}></div>
                         <span className="absolute inset-y-0 left-2 flex items-center font-mono text-white mix-blend-difference">
-                          {(score as number).toFixed(4)}
+                          {(score as number).toFixed(2)}
                         </span>
                       </div>
                     </li>

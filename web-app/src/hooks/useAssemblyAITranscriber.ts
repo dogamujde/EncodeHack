@@ -36,6 +36,11 @@ export const useAssemblyAITranscriber = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
+  // States for real-time metrics
+  const [confidence, setConfidence] = useState(0);
+  const [talkingSpeed, setTalkingSpeed] = useState(0);
+  const [clarity, setClarity] = useState(0);
+
   const onTranscriptRef = useRef(onTranscript);
   const onErrorRef = useRef(onError);
   const onCloseRef = useRef(onClose);
@@ -98,6 +103,23 @@ export const useAssemblyAITranscriber = ({
 
         newTranscriber.on('transcript', (transcript) => {
           onTranscriptRef.current(transcript);
+
+          // Update metrics based on transcript data
+          if (transcript.message_type === 'PartialTranscript' || transcript.message_type === 'FinalTranscript') {
+            setConfidence(transcript.confidence ?? 0);
+            setClarity(transcript.confidence ?? 0); // Use confidence as a proxy for clarity
+
+            if (transcript.words && transcript.words.length > 0) {
+              const words = transcript.words;
+              const firstWord = words[0];
+              const lastWord = words[words.length - 1];
+              const duration = (lastWord.end - firstWord.start) / 1000; // in seconds
+              if (duration > 0) {
+                const wpm = (words.length / duration) * 60;
+                setTalkingSpeed(wpm);
+              }
+            }
+          }
         });
 
         newTranscriber.on('error', (error) => {
@@ -196,5 +218,5 @@ export const useAssemblyAITranscriber = ({
     setIsConnected(false);
   }, []);
 
-  return { isReady, isRecording, isConnected, setup, start, stop };
+  return { isReady, isRecording, isConnected, confidence, talkingSpeed, clarity, setup, start, stop };
 }; 
