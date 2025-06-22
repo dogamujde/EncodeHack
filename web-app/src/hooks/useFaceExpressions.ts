@@ -248,78 +248,43 @@ export const useFaceExpressions = ({
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Flip the canvas context horizontally before drawing
-        canvasCtx.translate(canvas.width, 0);
-        canvasCtx.scale(-1, 1);
-
-        const drawingUtils = new DrawingUtils(canvasCtx);
-        if (showMesh && results.faceLandmarks) {
+        if (results.faceLandmarks) {
+          const drawingUtils = new DrawingUtils(canvasCtx);
           for (const landmarks of results.faceLandmarks) {
-            const videoHeight = videoRef.current?.videoHeight;
-            // The offset is normalized, so we divide by the video height
-            const yOffset = videoHeight ? (15 / videoHeight) : 0;
-
-            // Create a new landmark set where ALL points are shifted up
-            const shiftedLandmarks = landmarks.map(p => ({
-              ...p,
-              y: p.y - yOffset
-            }));
-            
-            // Draw the shifted gray parts
-            drawingUtils.drawConnectors(shiftedLandmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
-            drawingUtils.drawConnectors(shiftedLandmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
-            drawingUtils.drawConnectors(shiftedLandmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
-
-            // Draw the original, non-shifted colored eye parts over the top
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "#FF3030" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "#FF3030" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "#30FF30" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
+            if (showMesh) {
+              drawingUtils.drawConnectors(
+                landmarks,
+                FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+                { color: "#C0C0C070", lineWidth: 1 }
+              );
+            }
           }
         }
         canvasCtx.restore();
       }
-
-      if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
+  
+      if (results.faceBlendshapes) {
         analyzeBlendshapes(results.faceBlendshapes);
       }
-      
-      animationFrameId.current = requestAnimationFrame(predictWebcam);
     };
 
     const initialize = async () => {
       await createFaceLandmarker();
-
       const startPredictionLoop = () => {
-        if (!animationFrameId.current) {
-            animationFrameId.current = requestAnimationFrame(predictWebcam);
-        }
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
       };
-
-      // If the video's metadata is already loaded, start the loop.
-      // Otherwise, wait for the 'loadeddata' event.
-      if (video.readyState >= 1) { // HAVE_METADATA
-        startPredictionLoop();
-      } else {
-        video.addEventListener("loadeddata", startPredictionLoop);
-      }
+      video.addEventListener("playing", startPredictionLoop);
     };
-    
+
     initialize();
 
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
       }
-      if (faceLandmarkerRef.current && !isDetecting.current) {
-          faceLandmarkerRef.current.close();
-          faceLandmarkerRef.current = null;
-      }
+      faceLandmarkerRef.current?.close();
     };
-  }, [isReady, showMesh, videoRef, canvasRef]);
+  }, [isReady, videoRef, canvasRef, showMesh, customThresholds]);
 
   return analysis;
 }; 
