@@ -88,4 +88,7 @@ Thumbs.db
 *.m4a
 
 # Transcript files (optional - comment out if you want to include examples)
-*.json 
+*.json
+
+# Large media files
+web-app/public/placeholder.m4v 

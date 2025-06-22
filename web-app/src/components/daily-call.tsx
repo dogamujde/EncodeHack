@@ -15,6 +15,8 @@ interface DailyCallProps {
 export interface DailyCallHandle {
   toggleCamera: () => void;
   toggleMic: () => void;
+  startRecording: () => void;
+  stopRecording: () => void;
 }
 
 export const DailyCall = forwardRef<DailyCallHandle, DailyCallProps>(({ 
@@ -48,6 +50,16 @@ export const DailyCall = forwardRef<DailyCallHandle, DailyCallProps>(({
       if (callObjectRef.current) {
         const currentAudioState = callObjectRef.current.localAudio();
         callObjectRef.current.setLocalAudio(!currentAudioState);
+      }
+    },
+    startRecording: () => {
+      if (callObjectRef.current) {
+        callObjectRef.current.startRecording({ mode: 'local' });
+      }
+    },
+    stopRecording: () => {
+      if (callObjectRef.current) {
+        callObjectRef.current.stopRecording();
       }
     }
   }));
@@ -106,11 +118,19 @@ export const DailyCall = forwardRef<DailyCallHandle, DailyCallProps>(({
         .catch(err => console.error("[DailyCall] setInputDevicesAsync failed:", err));
       })
       .on('participant-updated', handleEvent)
-      .on('error', handleEvent);
+      .on('error', handleEvent)
+      .on('recording-started', () => console.log('[DailyCall] Recording started.'))
+      .on('recording-stopped', () => console.log('[DailyCall] Recording stopped.'))
+      .on('recording-error', (event) => console.error('[DailyCall] Recording error:', event));
 
     const roomURL = 'https://meetingbot.daily.co/coaching-room';
     
-    callObject.join({ url: roomURL })
+    callObject.join({ 
+      url: roomURL,
+      properties: {
+        enable_recording: 'local'
+      }
+    })
       .catch(err => console.error("[DailyCall] Failed to join Daily room:", err));
       
     return () => {

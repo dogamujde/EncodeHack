@@ -40,6 +40,17 @@ const upcomingMeetings = [
 
 const recentMeetings = [
     {
+        id: 5,
+        title: "Sales Meeting",
+        date: "Today",
+        time: "4:30 AM",
+        duration: "15 min",
+        participants: ["Doga Mujde", "Kaan Dogan"],
+        status: "completed",
+        sentiment: "positive",
+        insights: 12
+    },
+    {
         id: 3,
         title: "Project Phoenix Kickoff",
         date: "Yesterday",

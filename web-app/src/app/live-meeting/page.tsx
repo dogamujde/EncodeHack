@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFaceExpressions } from '@/hooks/useFaceExpressions';
 import { useAssemblyAITranscriber } from '@/hooks/useAssemblyAITranscriber';
 import { Button } from '@/components/ui/button';
-import { Camera, CameraOff, Mic, MicOff } from 'lucide-react';
+import { Camera, CameraOff, Mic, MicOff, Play, Square } from 'lucide-react';
 import { DailyCall, DailyCallHandle } from '@/components/daily-call';
 import MetricBar from '@/components/MetricBar';
 
@@ -24,10 +24,24 @@ export default function LiveMeetingPage() {
   const [isReadyForAnalysis, setIsReadyForAnalysis] = useState(false);
   const [showMesh, setShowMesh] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dailyCallRef = useRef<DailyCallHandle>(null);
+
+  const toggleRecording = () => {
+    if (!dailyCallRef.current) {
+      return;
+    }
+    if (isRecording) {
+      dailyCallRef.current.stopRecording();
+      setIsRecording(false);
+    } else {
+      dailyCallRef.current.startRecording();
+      setIsRecording(true);
+    }
+  };
 
   const handleTranscript = useCallback((transcript: any) => {
     if (transcript.message_type === 'PartialTranscript') {
@@ -170,6 +184,17 @@ export default function LiveMeetingPage() {
                 </div>
               )}
             </div>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 bg-opacity-50 p-2 rounded-lg flex space-x-4">
+              <Button onClick={() => dailyCallRef.current?.toggleCamera()} variant="ghost" className="text-white hover:bg-gray-700">
+                <Camera />
+              </Button>
+              <Button onClick={() => dailyCallRef.current?.toggleMic()} variant="ghost" className="text-white hover:bg-gray-700">
+                <Mic />
+              </Button>
+              <Button onClick={toggleRecording} variant="ghost" className="text-white hover:bg-gray-700">
+                {isRecording ? <Square className="text-red-500" /> : <Play />}
+              </Button>
+            </div>
           </div>
           <div className="w-full h-full flex flex-col gap-4">
             <div className="bg-[#1a1a1a] rounded-lg p-6 flex flex-col h-1/2">
@@ -205,7 +230,12 @@ export default function LiveMeetingPage() {
                 </div>
             </div>
             <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col h-1/2">
-                <h2 className="text-xl font-bold mb-4">Live Transcript</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">Live Transcript</h2>
+                  <Button onClick={() => navigator.clipboard.writeText(fullTranscript)} variant="outline" size="sm" disabled={!fullTranscript}>
+                    Copy Transcript
+                  </Button>
+                </div>
                 <div className="flex-1 overflow-y-auto text-gray-300">
                   <span>{fullTranscript}</span>
                   <span className="text-white">{currentUtterance}</span>
